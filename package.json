@@ -1,0 +1,21 @@
+{
+  "name": "flauers",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Flauers — arma tu ramo en 3D y regálalo con un link",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
+    "three": "^0.186.0"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^6.1.1",
+    "vite": "^8.3.0"
+  }
+}
