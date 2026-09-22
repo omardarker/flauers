@@ -10,9 +10,19 @@ const ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789' // 
 const MAX_BODY = 6000
 const MAX_STEMS = 40
 
+// Acepta cualquier prefijo que ponga la integración de Vercel
+// (KV_REST_API_URL, STORAGE_REST_API_URL, UPSTASH_REDIS_REST_URL, ...).
+function findEnv(suffixes) {
+  for (const suffix of suffixes) {
+    const key = Object.keys(process.env).find((k) => k.endsWith(suffix) && process.env[k])
+    if (key) return process.env[key]
+  }
+  return null
+}
+
 function redis() {
-  const url = process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL
-  const token = process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN
+  const url = findEnv(['KV_REST_API_URL', 'REST_API_URL', 'REDIS_REST_URL'])
+  const token = findEnv(['KV_REST_API_TOKEN', 'REST_API_TOKEN', 'REDIS_REST_TOKEN'])
   if (!url || !token) return null
   return new Redis({ url, token })
 }
