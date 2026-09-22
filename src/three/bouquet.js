@@ -209,7 +209,7 @@ export function buildBouquet(bouquet, opts = {}) {
     head.scale.setScalar(s.scale)
     fg.add(head)
 
-    const stem = new THREE.Mesh(new THREE.BufferGeometry(), petalMaterial())
+    const stem = new THREE.Mesh(new THREE.BufferGeometry(), petalMaterial('leaf'))
     stem.castShadow = true
     fg.add(stem)
 
@@ -459,7 +459,7 @@ function makeRibbon(hex, seed, radius = 0.4) {
 export function disposeGroup(obj) {
   obj.traverse((o) => {
     if (o.geometry) o.geometry.dispose()
-    if (o.material && o.material !== petalMaterial() && !o.material.userData?.shared) {
+    if (o.material && !o.material.userData?.shared) {
       if (Array.isArray(o.material)) o.material.forEach((m) => m.dispose())
       else o.material.dispose()
     }

@@ -275,18 +275,122 @@ export function transformed(geom, { pos = [0, 0, 0], rot = [0, 0, 0], scale = 1 
   return geom
 }
 
-// Material compartido: color blanco multiplicado por el color de vértice.
-let _petalMaterial
-export function petalMaterial() {
-  if (!_petalMaterial) {
-    _petalMaterial = new THREE.MeshStandardMaterial({
+// Materiales compartidos (color blanco × color de vértice).
+// "Luz envolvente": los pétalos son finos y dejan pasar luz, así que el
+// difuso no se apaga de golpe en la zona de sombra. Se inyecta en el shader.
+const WRAP = 0.3
+function wrapLighting(material) {
+  material.onBeforeCompile = (shader) => {
+    shader.fragmentShader = shader.fragmentShader
+      .replace(
+        'vec3 irradiance = dotNL * directLight.color;',
+        `vec3 irradiance = dotNL * directLight.color;
+	float wrapNL = saturate( ( dot( geometryNormal, directLight.direction ) + ${WRAP.toFixed(2)} ) / ( 1.0 + ${WRAP.toFixed(2)} ) );
+	vec3 wrapIrradiance = wrapNL * directLight.color;`,
+      )
+      .replace(
+        'reflectedLight.directDiffuse += irradiance * BRDF_Lambert( material.diffuseContribution ) * ( 1.0 - F );',
+        'reflectedLight.directDiffuse += wrapIrradiance * BRDF_Lambert( material.diffuseContribution ) * ( 1.0 - F );',
+      )
+  }
+  material.customProgramCacheKey = () => `wrap${WRAP}`
+  return material
+}
+
+const _materials = {}
+const MATERIALS = {
+  // pétalos aterciopelados (rosa, peonía, clavel...)
+  velvet: { roughness: 0.8, sheen: 0.65, sheenRoughness: 0.7, sheenColor: 0xfff4ec, envMapIntensity: 0.75 },
+  // pétalos cerosos y lisos (tulipán, lirio, orquídea)
+  waxy: { roughness: 0.42, clearcoat: 0.35, clearcoatRoughness: 0.45, sheen: 0.15, sheenRoughness: 0.6, envMapIntensity: 0.9 },
+  // hojas y tallos
+  leaf: { roughness: 0.6, clearcoat: 0.15, clearcoatRoughness: 0.5, sheen: 0.1, envMapIntensity: 0.8 },
+}
+
+export function petalMaterial(kind = 'velvet') {
+  if (!_materials[kind]) {
+    const m = new THREE.MeshPhysicalMaterial({
       vertexColors: true,
       side: THREE.DoubleSide,
-      roughness: 0.78,
       metalness: 0,
+      ...MATERIALS[kind],
     })
+    m.userData.shared = true
+    _materials[kind] = wrapLighting(m)
   }
-  return _petalMaterial
+  return _materials[kind]
+}
+
+/**
+ * Pétalo "de copa": un parche de una superficie de revolución (perfil r(t)),
+ * como los tépalos de un tulipán, que juntos forman un huevo liso.
+ * Se coloca con whorl({ r0: 0, tilt: 0 }) porque el perfil ya incluye el radio.
+ */
+export function makeCupPetal(opts = {}) {
+  const {
+    height = 0.7,
+    span = 2.6, // ángulo que abarca el pétalo (rad)
+    profile = (t) => 0.1 + 0.25 * Math.sin(Math.PI * t * 0.7),
+    widthFn = (t) => 1,
+    flare = 0, // apertura extra de la punta hacia fuera
+    tipStart = 0.7,
+    twist = 0,
+    nx = 12,
+    ny = 18,
+    colorBase = '#ffffff',
+    colorTip = colorBase,
+    colorEdge = null,
+    edgeAmount = 0.3,
+    colorBlotch = null, // mancha de la base (interior del tulipán)
+    blotchEnd = 0.2,
+  } = opts
+  const cb = toColor(colorBase)
+  const ct = toColor(colorTip)
+  const ce = colorEdge ? toColor(colorEdge) : null
+  const cbl = colorBlotch ? toColor(colorBlotch) : null
+  const verts = (nx + 1) * (ny + 1)
+  const positions = new Float32Array(verts * 3)
+  const colors = new Float32Array(verts * 3)
+  const uvs = new Float32Array(verts * 2)
+  const tmp = new THREE.Color()
+  let k = 0
+  for (let j = 0; j <= ny; j++) {
+    const t = j / ny
+    const w = widthFn(t)
+    const fl = t > tipStart ? flare * smooth((t - tipStart) / (1 - tipStart)) : 0
+    const r = profile(t) + fl
+    for (let i = 0; i <= nx; i++) {
+      const u = (i / nx) * 2 - 1
+      const a = u * (span / 2) * w + twist * t
+      positions[k * 3] = Math.sin(a) * r
+      positions[k * 3 + 1] = t * height
+      positions[k * 3 + 2] = Math.cos(a) * r
+      uvs[k * 2] = (u + 1) / 2
+      uvs[k * 2 + 1] = t
+      tmp.copy(cb).lerp(ct, smooth(t))
+      if (ce) tmp.lerp(ce, edgeAmount * Math.pow(Math.abs(u), 2.5))
+      if (cbl && t < blotchEnd) tmp.lerp(cbl, 1 - smooth(t / blotchEnd))
+      colors[k * 3] = tmp.r
+      colors[k * 3 + 1] = tmp.g
+      colors[k * 3 + 2] = tmp.b
+      k++
+    }
+  }
+  const indices = []
+  for (let j = 0; j < ny; j++) {
+    for (let i = 0; i < nx; i++) {
+      const a0 = j * (nx + 1) + i
+      const b0 = a0 + nx + 1
+      indices.push(a0, b0, a0 + 1, b0, b0 + 1, a0 + 1)
+    }
+  }
+  const geom = new THREE.BufferGeometry()
+  geom.setAttribute('position', new THREE.BufferAttribute(positions, 3))
+  geom.setAttribute('color', new THREE.BufferAttribute(colors, 3))
+  geom.setAttribute('uv', new THREE.BufferAttribute(uvs, 2))
+  geom.setIndex(indices)
+  geom.computeVertexNormals()
+  return geom
 }
 
 export function meshOf(geoms, material = petalMaterial()) {
