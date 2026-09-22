@@ -4,7 +4,7 @@
 import * as THREE from 'three'
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js'
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js'
-import { disposeGroup } from './bouquet.js'
+import { disposeGroup, placeFlower, domeY } from './bouquet.js'
 
 let _envCache = null
 export function environmentFor(renderer) {
@@ -99,12 +99,20 @@ export class BouquetStage {
     this.group = null
     this._raf = 0
     this._running = false
+    this._drag = null
+    this._dragEnabled = false
+    this._raycaster = new THREE.Raycaster()
+    this._ndc = new THREE.Vector2()
+    this._onPointerDown = (e) => this._pointerDown(e)
+    this._onPointerMove = (e) => this._pointerMove(e)
+    this._onPointerUp = (e) => this._pointerUp(e)
     this._resizeObs = new ResizeObserver(() => this.resize())
     this._resizeObs.observe(canvas.parentElement || canvas)
     this.resize()
   }
 
   setBouquet(group) {
+    if (this._drag) this._endDrag(false)
     if (this.group) {
       this.scene.remove(this.group)
       disposeGroup(this.group)
@@ -118,6 +126,130 @@ export class BouquetStage {
       const dir = this.camera.position.clone().sub(this.controls.target).normalize()
       this.camera.position.copy(this.controls.target).add(dir.multiplyScalar(dist))
       this.controls.target.set(0, this.targetY + Math.min(r, 2) * 0.1, 0)
+    }
+  }
+
+  // ----- Arrastre de flores -----------------------------------------------
+
+  /** Permite tomar una flor con el puntero y moverla. onMove(key, [x, y, z]) al soltar. */
+  enableDrag({ onMove } = {}) {
+    this.onMove = onMove
+    if (this._dragEnabled) return
+    this._dragEnabled = true
+    // capture: se ejecuta antes que OrbitControls, así podemos bloquear la órbita
+    this.canvas.addEventListener('pointerdown', this._onPointerDown, { capture: true })
+    this.canvas.addEventListener('pointermove', this._onPointerMove)
+    this.canvas.addEventListener('pointerup', this._onPointerUp)
+    this.canvas.addEventListener('pointercancel', this._onPointerUp)
+  }
+
+  _hitboxes() {
+    return this.group ? this.group.userData.flowers.map((fg) => fg.userData.hit) : []
+  }
+
+  _pick(e) {
+    const rect = this.canvas.getBoundingClientRect()
+    this._ndc.set(((e.clientX - rect.left) / rect.width) * 2 - 1, -((e.clientY - rect.top) / rect.height) * 2 + 1)
+    this._raycaster.setFromCamera(this._ndc, this.camera)
+    const hits = this._raycaster.intersectObjects(this._hitboxes(), false)
+    return hits.length ? hits[0].object.userData.owner : null
+  }
+
+  _pointerDown(e) {
+    if (!this._dragEnabled || !this.group) return
+    if (e.pointerType === 'mouse' && e.button !== 0) return
+    const fg = this._pick(e)
+    if (!fg) return
+    e.preventDefault()
+    e.stopImmediatePropagation()
+    this.controls.enabled = false
+    this.controls.autoRotate = false
+    clearTimeout(this._idleTimer)
+    try {
+      this.canvas.setPointerCapture(e.pointerId)
+    } catch {
+      /* ignore */
+    }
+    const head = fg.userData.head
+    const vertical = e.shiftKey
+    const plane = new THREE.Plane()
+    if (vertical) {
+      const n = new THREE.Vector3()
+      this.camera.getWorldDirection(n)
+      n.y = 0
+      n.normalize().negate()
+      plane.setFromNormalAndCoplanarPoint(n, head.position)
+    } else {
+      plane.setFromNormalAndCoplanarPoint(new THREE.Vector3(0, 1, 0), head.position)
+    }
+    const hit = new THREE.Vector3()
+    this._raycaster.ray.intersectPlane(plane, hit)
+    const offset = hit ? head.position.clone().sub(hit) : new THREE.Vector3()
+    this._drag = { fg, plane, offset, vertical, pointerId: e.pointerId, moved: false }
+    head.scale.multiplyScalar(1.06)
+    this.canvas.style.cursor = 'grabbing'
+  }
+
+  _pointerMove(e) {
+    if (!this._dragEnabled || !this.group) return
+    const d = this._drag
+    if (!d) {
+      this.canvas.style.cursor = this._pick(e) ? 'grab' : ''
+      return
+    }
+    if (e.pointerId !== d.pointerId) return
+    const rect = this.canvas.getBoundingClientRect()
+    this._ndc.set(((e.clientX - rect.left) / rect.width) * 2 - 1, -((e.clientY - rect.top) / rect.height) * 2 + 1)
+    this._raycaster.setFromCamera(this._ndc, this.camera)
+    const hit = new THREE.Vector3()
+    if (!this._raycaster.ray.intersectPlane(d.plane, hit)) return
+    hit.add(d.offset)
+    const { fg } = d
+    const { head, def } = fg.userData
+    const R = this.group.userData.R || 1
+    const pos = head.position.clone()
+    if (d.vertical) {
+      // Shift: sube o baja la flor
+      pos.y = THREE.MathUtils.clamp(hit.y, -1.4, 1.8)
+      fg.userData.lift = pos.y - domeY(Math.hypot(pos.x, pos.z), R, def)
+    } else {
+      const maxR = Math.max(R, 1) + 0.9
+      let r = Math.hypot(hit.x, hit.z)
+      let x = hit.x
+      let z = hit.z
+      if (r > maxR) {
+        x *= maxR / r
+        z *= maxR / r
+        r = maxR
+      }
+      pos.set(x, domeY(r, R, def) + fg.userData.lift, z)
+    }
+    d.moved = true
+    placeFlower(fg, pos)
+  }
+
+  _pointerUp(e) {
+    const d = this._drag
+    if (!d || e.pointerId !== d.pointerId) return
+    this._endDrag(true)
+  }
+
+  _endDrag(commit) {
+    const d = this._drag
+    this._drag = null
+    if (!d) return
+    const { fg } = d
+    fg.userData.head.scale.multiplyScalar(1 / 1.06)
+    this.controls.enabled = true
+    this.canvas.style.cursor = ''
+    try {
+      this.canvas.releasePointerCapture(d.pointerId)
+    } catch {
+      /* ignore */
+    }
+    if (commit && d.moved && this.onMove) {
+      const p = fg.userData.head.position
+      this.onMove(fg.userData.key, [p.x, p.y, p.z])
     }
   }
 
@@ -167,6 +299,12 @@ export class BouquetStage {
 
   dispose() {
     this.stop()
+    if (this._dragEnabled) {
+      this.canvas.removeEventListener('pointerdown', this._onPointerDown, { capture: true })
+      this.canvas.removeEventListener('pointermove', this._onPointerMove)
+      this.canvas.removeEventListener('pointerup', this._onPointerUp)
+      this.canvas.removeEventListener('pointercancel', this._onPointerUp)
+    }
     this._resizeObs.disconnect()
     clearTimeout(this._idleTimer)
     this.controls.dispose()

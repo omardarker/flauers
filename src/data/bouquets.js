@@ -107,5 +107,6 @@ export function presetToBouquet(preset) {
     to: '',
     from: '',
     message: '',
+    layout: {},
   }
 }

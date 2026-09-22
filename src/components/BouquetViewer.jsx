@@ -6,13 +6,16 @@ import { buildBouquet } from '../three/bouquet.js'
  * Lienzo 3D interactivo. Reconstruye el ramo cuando cambian sus items,
  * el papel o el lazo (con un pequeño debounce para los steppers).
  */
-export function BouquetViewer({ bouquet, className, onReady, targetY }) {
+export function BouquetViewer({ bouquet, className, onReady, targetY, editable = false, onMove }) {
   const canvasRef = useRef(null)
   const stageRef = useRef(null)
+  const onMoveRef = useRef(onMove)
+  onMoveRef.current = onMove
 
   useEffect(() => {
     const stage = new BouquetStage(canvasRef.current, { targetY })
     stageRef.current = stage
+    if (editable) stage.enableDrag({ onMove: (key, pos) => onMoveRef.current?.(key, pos) })
     stage.start()
     onReady?.(stage)
     return () => {
@@ -22,7 +25,7 @@ export function BouquetViewer({ bouquet, className, onReady, targetY }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  const key = JSON.stringify([bouquet.items, bouquet.wrap, bouquet.ribbon])
+  const key = JSON.stringify([bouquet.items, bouquet.wrap, bouquet.ribbon, bouquet.layout || null])
   useEffect(() => {
     const t = setTimeout(() => {
       const stage = stageRef.current
@@ -33,5 +36,5 @@ export function BouquetViewer({ bouquet, className, onReady, targetY }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [key])
 
-  return <canvas ref={canvasRef} className={className} aria-label="Ramo en 3D. Arrastra para girar." />
+  return <canvas ref={canvasRef} className={className} aria-label={editable ? "Ramo en 3D. Arrastra una flor para moverla o el fondo para girar." : "Ramo en 3D. Arrastra para girar."} />
 }

@@ -7,7 +7,7 @@ import { FlowerImage } from '../components/FlowerImage.jsx'
 import { ShareModal } from '../components/ShareModal.jsx'
 import { Header } from '../components/Header.jsx'
 
-const EMPTY = { items: [], wrap: 'kraft', ribbon: 'lino', to: '', from: '', message: '' }
+const EMPTY = { items: [], wrap: 'kraft', ribbon: 'lino', to: '', from: '', message: '', layout: {} }
 const MAX_STEMS = 40
 
 export function Builder({ code, selection, setSelection }) {
@@ -30,10 +30,28 @@ export function Builder({ code, selection, setSelection }) {
   useEffect(() => setSelection(bouquet.items), [bouquet.items, setSelection])
 
   const stems = bouquet.items.reduce((s, i) => s + i.qty, 0)
+  const layout = bouquet.layout || {}
+  const hasLayout = Object.keys(layout).length > 0
   const update = (patch) => setBouquet((b) => ({ ...b, ...patch }))
-  const updateItem = (flowerId, patch) =>
-    update({ items: bouquet.items.map((it) => (it.flower === flowerId ? { ...it, ...patch } : it)) })
-  const removeItem = (flowerId) => update({ items: bouquet.items.filter((it) => it.flower !== flowerId) })
+  // descarta posiciones fijadas de tallos que ya no existen
+  const pruneLayout = (items) => {
+    const out = {}
+    Object.entries(layout).forEach(([key, pos]) => {
+      const [flower, idx] = key.split(':')
+      const it = items.find((i) => i.flower === flower)
+      if (it && Number(idx) < it.qty) out[key] = pos
+    })
+    return out
+  }
+  const updateItem = (flowerId, patch) => {
+    const items = bouquet.items.map((it) => (it.flower === flowerId ? { ...it, ...patch } : it))
+    update({ items, layout: pruneLayout(items) })
+  }
+  const removeItem = (flowerId) => {
+    const items = bouquet.items.filter((it) => it.flower !== flowerId)
+    update({ items, layout: pruneLayout(items) })
+  }
+  const moveFlower = (key, pos) => setBouquet((b) => ({ ...b, layout: { ...(b.layout || {}), [key]: pos } }))
   const addFlower = (f) => {
     if (bouquet.items.some((it) => it.flower === f.id)) return
     const qty = f.filler ? 3 : f.model === 'sunflower' || f.model === 'hydrangea' ? 1 : 3
@@ -55,7 +73,7 @@ export function Builder({ code, selection, setSelection }) {
       <Header />
       <div className="builder">
         <div className="builder__stage">
-          <BouquetViewer bouquet={bouquet} onReady={(s) => (stageRef.current = s)} />
+          <BouquetViewer bouquet={bouquet} editable onMove={moveFlower} onReady={(s) => (stageRef.current = s)} />
           {bouquet.items.length === 0 && (
             <div className="stage-empty">
               <div>
@@ -64,7 +82,16 @@ export function Builder({ code, selection, setSelection }) {
               </div>
             </div>
           )}
-          {bouquet.items.length > 0 && <span className="stage-hint">Arrastra para girar · Rueda para acercar</span>}
+          {bouquet.items.length > 0 && (
+            <span className="stage-hint">
+              Arrastra una flor para moverla · Arrastra el fondo para girar · Shift: subir o bajar
+            </span>
+          )}
+          {hasLayout && (
+            <button className="btn btn--soft btn--sm stage-reset" onClick={() => update({ layout: {} })} title="Vuelve a acomodar todas las flores automáticamente">
+              Reacomodar automáticamente
+            </button>
+          )}
         </div>
 
         <aside className="builder__panel">

@@ -25,8 +25,30 @@ export function encodeBouquet(bouquet) {
     t: bouquet.to || undefined,
     f: bouquet.from || undefined,
     m: bouquet.message || undefined,
+    l: encodeLayout(bouquet.layout),
   }
   return toBase64Url(JSON.stringify(compact))
+}
+
+const r2 = (v) => Math.round(v * 100) / 100
+
+function encodeLayout(layout) {
+  if (!layout) return undefined
+  const rows = Object.entries(layout)
+    .filter(([, p]) => Array.isArray(p) && p.length === 3 && p.every(Number.isFinite))
+    .map(([k, p]) => [k, r2(p[0]), r2(p[1]), r2(p[2])])
+  return rows.length ? rows : undefined
+}
+
+function decodeLayout(rows) {
+  const out = {}
+  if (!Array.isArray(rows)) return out
+  rows.forEach((row) => {
+    if (!Array.isArray(row) || row.length !== 4) return
+    const [k, x, y, z] = row
+    if (typeof k === 'string' && [x, y, z].every((v) => typeof v === 'number' && Number.isFinite(v))) out[k] = [x, y, z]
+  })
+  return out
 }
 
 export function decodeBouquet(code) {
@@ -40,6 +62,7 @@ export function decodeBouquet(code) {
       to: c.t || '',
       from: c.f || '',
       message: c.m || '',
+      layout: decodeLayout(c.l),
     }
   } catch {
     return null
