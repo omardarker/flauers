@@ -17,12 +17,12 @@ let scheduled = false
 function ensure() {
   if (renderer) return
   const canvas = document.createElement('canvas')
-  renderer = createRenderer(canvas, { alpha: true, shadows: false })
+  renderer = createRenderer(canvas, { alpha: true, shadows: true })
   renderer.setPixelRatio(1)
   scene = new THREE.Scene()
   scene.environment = environmentFor(renderer)
-  scene.environmentIntensity = 0.6
-  addLights(scene, { shadows: false })
+  scene.environmentIntensity = 0.3
+  addLights(scene, { shadows: true })
   camera = new THREE.PerspectiveCamera(30, 1, 0.1, 50)
 }
 

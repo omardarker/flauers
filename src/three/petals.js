@@ -100,6 +100,7 @@ export function makePetal(opts = {}) {
     colorTip = colorBase,
     colorEdge = null,
     edgeAmount = 0.35,
+    occlusion = 0.4, // oscurecimiento en la base (zona interior de la flor)
     seed = 0,
   } = opts
 
@@ -162,6 +163,7 @@ export function makePetal(opts = {}) {
 
       tmp.copy(cb).lerp(ct, smooth(t))
       if (ce) tmp.lerp(ce, edgeAmount * Math.pow(Math.abs(u), 2.2))
+      if (occlusion) tmp.multiplyScalar(1 - occlusion * (1 - smooth(Math.min(1, t / 0.7))))
       colors[k * 3] = tmp.r
       colors[k * 3 + 1] = tmp.g
       colors[k * 3 + 2] = tmp.b
@@ -232,13 +234,21 @@ export function whorl(makeGeom, opts = {}) {
 
 const lerp = (a, b, t) => a + (b - a) * t
 
+/** Multiplica el color de vértice de una geometría (oclusión horneada). */
+export function darken(geom, factor) {
+  const c = geom.attributes.color
+  if (!c) return geom
+  for (let i = 0; i < c.count; i++) c.setXYZ(i, c.getX(i) * factor, c.getY(i) * factor, c.getZ(i) * factor)
+  return geom
+}
+
 /**
  * Coloca pétalos en espiral (ángulo áureo), como crecen en una rosa o una
  * peonía. Cada parámetro puede ser un número o un par [inicio, fin] que se
  * interpola desde el centro hacia fuera.
  */
 export function spiral(makeGeom, opts = {}) {
-  const { n = 30, seed = 1, jitter = 0.1, ease = 1 } = opts
+  const { n = 30, seed = 1, jitter = 0.1, ease = 1, depthShade = 0.3 } = opts
   const rand = rng(seed)
   const val = (v, t) => (Array.isArray(v) ? lerp(v[0], v[1], t) : v)
   const golden = Math.PI * (3 - Math.sqrt(5))
@@ -251,6 +261,7 @@ export function spiral(makeGeom, opts = {}) {
     const tilt = val(opts.tilt ?? 0.5, t) + (rand() - 0.5) * jitter
     const sc = val(opts.scale ?? 1, t) * (1 + (rand() - 0.5) * jitter)
     const g = makeGeom(i, t, rand)
+    if (depthShade) darken(g, 1 - depthShade * (1 - t))
     _e.set(tilt, 0, 0)
     _q.setFromEuler(_e)
     _p.set(0, y0, r0)
@@ -276,35 +287,14 @@ export function transformed(geom, { pos = [0, 0, 0], rot = [0, 0, 0], scale = 1 
 }
 
 // Materiales compartidos (color blanco × color de vértice).
-// "Luz envolvente": los pétalos son finos y dejan pasar luz, así que el
-// difuso no se apaga de golpe en la zona de sombra. Se inyecta en el shader.
-const WRAP = 0.3
-function wrapLighting(material) {
-  material.onBeforeCompile = (shader) => {
-    shader.fragmentShader = shader.fragmentShader
-      .replace(
-        'vec3 irradiance = dotNL * directLight.color;',
-        `vec3 irradiance = dotNL * directLight.color;
-	float wrapNL = saturate( ( dot( geometryNormal, directLight.direction ) + ${WRAP.toFixed(2)} ) / ( 1.0 + ${WRAP.toFixed(2)} ) );
-	vec3 wrapIrradiance = wrapNL * directLight.color;`,
-      )
-      .replace(
-        'reflectedLight.directDiffuse += irradiance * BRDF_Lambert( material.diffuseContribution ) * ( 1.0 - F );',
-        'reflectedLight.directDiffuse += wrapIrradiance * BRDF_Lambert( material.diffuseContribution ) * ( 1.0 - F );',
-      )
-  }
-  material.customProgramCacheKey = () => `wrap${WRAP}`
-  return material
-}
-
 const _materials = {}
 const MATERIALS = {
   // pétalos aterciopelados (rosa, peonía, clavel...)
-  velvet: { roughness: 0.8, sheen: 0.65, sheenRoughness: 0.7, sheenColor: 0xfff4ec, envMapIntensity: 0.75 },
+  velvet: { roughness: 0.85, sheen: 0.35, sheenRoughness: 0.8, sheenColor: 0xfff4ec, envMapIntensity: 0.5 },
   // pétalos cerosos y lisos (tulipán, lirio, orquídea)
-  waxy: { roughness: 0.42, clearcoat: 0.35, clearcoatRoughness: 0.45, sheen: 0.15, sheenRoughness: 0.6, envMapIntensity: 0.9 },
+  waxy: { roughness: 0.45, clearcoat: 0.3, clearcoatRoughness: 0.45, sheen: 0.1, sheenRoughness: 0.6, envMapIntensity: 0.6 },
   // hojas y tallos
-  leaf: { roughness: 0.6, clearcoat: 0.15, clearcoatRoughness: 0.5, sheen: 0.1, envMapIntensity: 0.8 },
+  leaf: { roughness: 0.65, clearcoat: 0.12, clearcoatRoughness: 0.5, sheen: 0.05, envMapIntensity: 0.55 },
 }
 
 export function petalMaterial(kind = 'velvet') {
@@ -316,7 +306,7 @@ export function petalMaterial(kind = 'velvet') {
       ...MATERIALS[kind],
     })
     m.userData.shared = true
-    _materials[kind] = wrapLighting(m)
+    _materials[kind] = m
   }
   return _materials[kind]
 }
@@ -343,6 +333,7 @@ export function makeCupPetal(opts = {}) {
     edgeAmount = 0.3,
     colorBlotch = null, // mancha de la base (interior del tulipán)
     blotchEnd = 0.2,
+    occlusion = 0.35,
   } = opts
   const cb = toColor(colorBase)
   const ct = toColor(colorTip)
@@ -370,6 +361,7 @@ export function makeCupPetal(opts = {}) {
       tmp.copy(cb).lerp(ct, smooth(t))
       if (ce) tmp.lerp(ce, edgeAmount * Math.pow(Math.abs(u), 2.5))
       if (cbl && t < blotchEnd) tmp.lerp(cbl, 1 - smooth(t / blotchEnd))
+      if (occlusion) tmp.multiplyScalar(1 - occlusion * (1 - smooth(Math.min(1, t / 0.6))))
       colors[k * 3] = tmp.r
       colors[k * 3 + 1] = tmp.g
       colors[k * 3 + 2] = tmp.b
