@@ -30,6 +30,8 @@ export const SIZE = {
   hydrangea: 0.62,
   gypsophila: 0.5,
   eucalyptus: 0.45,
+  begonia: 0.45,
+  alstroemeria: 0.55,
 }
 
 function sizeOf(def) {

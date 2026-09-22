@@ -630,6 +630,124 @@ export function eucalyptus({ hex, seed = 14 }) {
   return group([meshOf(geoms)], 0.5, { filler: true, spike: true })
 }
 
+
+// ---------------------------------------------------------------- Begonia
+// Begonia doble: capas de pétalos redondeados y ligeramente ondulados,
+// más plana que una rosa y con el centro apretado.
+export function begonia({ hex, seed = 15 }) {
+  const base = shade(hex, -0.06, 0.06)
+  const tip = shade(hex, 0.08, -0.04)
+  const edge = shade(hex, 0.14, -0.08)
+  const layers = [
+    { n: 4, r0: 0.0, len: 0.16, w: 0.16, tilt: 0.1, bend: 0.5, cup: 0.8, y0: 0.04 },
+    { n: 6, r0: 0.03, len: 0.22, w: 0.22, tilt: 0.45, bend: 0.45, cup: 0.5, y0: 0.02 },
+    { n: 8, r0: 0.07, len: 0.28, w: 0.28, tilt: 0.85, bend: 0.4, cup: 0.35, y0: 0 },
+    { n: 10, r0: 0.11, len: 0.32, w: 0.32, tilt: 1.15, bend: 0.35, cup: 0.25, y0: -0.03 },
+    { n: 12, r0: 0.15, len: 0.34, w: 0.34, tilt: 1.4, bend: 0.3, cup: 0.2, y0: -0.06 },
+  ]
+  const geoms = []
+  layers.forEach((L, li) => {
+    geoms.push(
+      ...whorl(
+        (i) =>
+          makePetal({
+            length: L.len,
+            width: L.w,
+            bend: L.bend,
+            curl: 0.2,
+            cup: L.cup,
+            ruffle: 0.02,
+            ruffleFreq: 6,
+            baseW: 0.45,
+            mid: 0.45,
+            tipStart: 0.55,
+            colorBase: base,
+            colorTip: tip,
+            colorEdge: edge,
+            nx: 7,
+            ny: 9,
+            seed: seed * 3 + li * 19 + i,
+          }),
+        { n: L.n, r0: L.r0, y0: L.y0, tilt: L.tilt, phase: li * 0.6, jitter: 0.15, seed: seed + li },
+      ),
+    )
+  })
+  geoms.push(calyx(0.12, 0.22, GREEN, -0.14))
+  // hoja asimétrica típica de la begonia
+  geoms.push(
+    transformed(
+      makePetal({ length: 0.5, width: 0.4, bend: 0.4, cup: 0.3, pointy: 1.2, tipStart: 0.5, twist: 0.25, colorBase: '#4d6b45', colorTip: '#6f8f63', nx: 6, ny: 8, seed }),
+      { pos: [0.12, -0.3, 0.1], rot: [1.0, 1.1, 0] },
+    ),
+  )
+  return group([meshOf(geoms)], 0.45)
+}
+
+// ---------------------------------------------------------------- Astromelia
+// Alstroemeria: varias flores en embudo por tallo. Seis pétalos: los dos
+// superiores internos con garganta amarilla y base más oscura (las "rayas").
+export function alstroemeria({ hex, seed = 16 }) {
+  const rand = rng(seed)
+  const base = shade(hex, -0.02, 0.05)
+  const tip = shade(hex, 0.06)
+  const throat = '#e9d26a'
+  const streak = shade(hex, -0.3, 0.1)
+  const one = (k) => {
+    const outer = (i) =>
+      makePetal({ length: 0.42, width: 0.2, bend: 0.5, curl: 0.5, cup: 0.35, baseW: 0.3, mid: 0.6, tipStart: 0.7, pointy: 0.6, colorBase: base, colorTip: tip, nx: 5, ny: 10, seed: seed + k * 7 + i })
+    const inner = (i) =>
+      makePetal({ length: 0.44, width: 0.15, bend: 0.4, curl: 0.6, cup: 0.3, baseW: 0.25, mid: 0.65, tipStart: 0.7, pointy: 0.7, colorBase: throat, colorTip: i === 2 ? tip : streak, colorEdge: base, edgeAmount: 0.6, nx: 5, ny: 10, seed: seed + k * 7 + 3 + i })
+    const geoms = [
+      ...whorl(outer, { n: 3, r0: 0.03, y0: 0, tilt: 0.6, seed: seed + k, jitter: 0.08 }),
+      ...whorl(inner, { n: 3, r0: 0.03, y0: 0.01, tilt: 0.5, phase: Math.PI / 3, seed: seed + k + 1, jitter: 0.08 }),
+    ]
+    // estambres
+    for (let i = 0; i < 6; i++) {
+      const th = (i / 6) * Math.PI * 2
+      const dir = new THREE.Vector3(Math.cos(th) * 0.1, 0.34, Math.sin(th) * 0.1)
+      const fil = new THREE.CylinderGeometry(0.005, 0.005, dir.length(), 4, 1)
+      fil.translate(0, dir.length() / 2, 0)
+      fil.applyQuaternion(new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir.clone().normalize()))
+      geoms.push(paint(fil, '#d9c9a6'))
+      const anther = new THREE.SphereGeometry(0.014, 5, 4)
+      anther.translate(dir.x, dir.y, dir.z)
+      geoms.push(paint(anther, '#7a4a2e'))
+    }
+    geoms.push(calyx(0.05, 0.12, GREEN_LIGHT, -0.04))
+    return geoms
+  }
+  // 3 flores en umbela: una central y dos inclinadas, cada una con su pedicelo
+  const geoms = []
+  const heads = [
+    { dir: new THREE.Vector3(0, 1, 0), len: 0.25 },
+    { dir: new THREE.Vector3(0.75, 0.75, 0.2).normalize(), len: 0.32 },
+    { dir: new THREE.Vector3(-0.6, 0.7, -0.45).normalize(), len: 0.3 },
+  ]
+  heads.forEach((h, k) => {
+    const q = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), h.dir)
+    const pos = h.dir.clone().multiplyScalar(h.len)
+    const rotY = rand() * Math.PI * 2
+    one(k).forEach((g) => {
+      g.rotateY(rotY)
+      g.applyQuaternion(q)
+      g.translate(pos.x, pos.y, pos.z)
+      geoms.push(g)
+    })
+    const ped = new THREE.CylinderGeometry(0.012, 0.014, h.len, 5, 1)
+    ped.translate(0, h.len / 2, 0)
+    ped.applyQuaternion(q)
+    geoms.push(paint(ped, GREEN_LIGHT))
+  })
+  // hojas lanceoladas en la base
+  geoms.push(
+    ...whorl(
+      (i) => makePetal({ length: 0.4, width: 0.1, bend: 0.6, cup: 0.3, pointy: 1.2, tipStart: 0.45, colorBase: GREEN, colorTip: GREEN_LIGHT, nx: 3, ny: 6, seed: seed + i }),
+      { n: 4, r0: 0.03, y0: -0.12, tilt: 1.1, seed: seed + 5 },
+    ),
+  )
+  return group([meshOf(geoms)], 0.55)
+}
+
 export const BUILDERS = {
   rose,
   peony,
@@ -645,6 +763,8 @@ export const BUILDERS = {
   hydrangea,
   gypsophila,
   eucalyptus,
+  begonia,
+  alstroemeria,
 }
 
 export function buildFlower(model, opts) {
