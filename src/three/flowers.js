@@ -211,10 +211,11 @@ export function tulip({ hex, seed = 3 }) {
     const u = (t - 0.58) / 0.42
     return rMax - (rMax - rTop) * (1 - Math.cos(Math.PI * u)) / 2
   }
-  // contorno: base ancha para solaparse, punta redondeada con ligero pico
+  // contorno: base ancha para solaparse; punta de huevo (redonda, apenas apuntada)
   const widthFn = (t) => {
     if (t < 0.5) return 0.74 + 0.26 * smoothstep(0, 0.5, t)
-    return 1 - 0.88 * Math.pow((t - 0.5) / 0.5, 1.3)
+    const u = (t - 0.5) / 0.5
+    return Math.pow(Math.max(0, 1 - Math.pow(u, 2.3)), 0.62)
   }
   const tepal = (outer) => (i) =>
     makeCupPetal({
@@ -231,8 +232,8 @@ export function tulip({ hex, seed = 3 }) {
       edgeAmount: 0.3,
       colorBlotch: pale,
       blotchEnd: 0.16,
-      nx: 16,
-      ny: 24,
+      nx: 26,
+      ny: 30,
     })
   const geoms = [
     ...whorl(tepal(true), { n: 3, r0: 0, y0: 0.02, tilt: 0, seed, jitter: 0.03, scaleJitter: 0.015 }),
