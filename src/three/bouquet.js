@@ -64,6 +64,35 @@ export function domeY(r, R, def) {
   return y
 }
 
+/** Posición base (sobre la cúpula) para unas coordenadas x, z. */
+export function stemBase(x, z, R, def) {
+  return new THREE.Vector3(x, domeY(Math.hypot(x, z), R, def), z)
+}
+
+/** Cuánto se alargó (+) o acortó (−) el tallo respecto a su largo base. */
+export function liftOf(pos, R, def) {
+  return pos.distanceTo(FOCAL) - stemBase(pos.x, pos.z, R, def).distanceTo(FOCAL)
+}
+
+/**
+ * Mueve una cabeza a lo largo de su tallo (recta desde el foco) hasta que su
+ * tallo mida el largo base más `lift`. Bajar acerca la flor al centro y
+ * acorta el tallo; subir lo alarga. El tallo nunca se dobla para alcanzarla.
+ */
+export function withLift(pos, lift, R, def) {
+  const dir = pos.clone().sub(FOCAL).normalize()
+  let p = pos.clone()
+  for (let i = 0; i < 4; i++) {
+    const base = stemBase(p.x, p.z, R, def).distanceTo(FOCAL)
+    let d = base + lift
+    // la cabeza siempre por encima del lazo
+    const minD = dir.y > 0.05 ? (BIND_Y + 0.35 - FOCAL.y) / dir.y : 0.5
+    d = Math.max(minD, d)
+    p = FOCAL.clone().addScaledVector(dir, d)
+  }
+  return p
+}
+
 function validPos(p) {
   return Array.isArray(p) && p.length === 3 && p.every((v) => Number.isFinite(v))
 }
@@ -227,7 +256,7 @@ export function buildBouquet(bouquet, opts = {}) {
       hit,
       rot: s.rot,
       stemParams: stemParams(rand, s.k),
-      lift: s.fixed ? s.y - domeY(Math.hypot(s.x, s.z), R, s.f.def) : 0,
+      lift: s.fixed ? liftOf(new THREE.Vector3(s.x, s.y, s.z), R, s.f.def) : 0,
     }
     placeFlower(fg, new THREE.Vector3(s.x, s.y, s.z))
     root.add(fg)

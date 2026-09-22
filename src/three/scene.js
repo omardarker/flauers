@@ -4,7 +4,7 @@
 import * as THREE from 'three'
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js'
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js'
-import { disposeGroup, placeFlower, domeY, relayoutBouquet, headLimit } from './bouquet.js'
+import { disposeGroup, placeFlower, relayoutBouquet, headLimit, stemBase, withLift, liftOf, FOCAL } from './bouquet.js'
 
 let _envCache = null
 export function environmentFor(renderer) {
@@ -212,8 +212,7 @@ export class BouquetStage {
     if (!fg) return
     const { head, def } = fg.userData
     const R = this.group.userData.R || 1
-    const pos = head.position.clone()
-    pos.y = domeY(Math.hypot(pos.x, pos.z), R, def) + lift
+    const pos = withLift(head.position, lift, R, def)
     fg.userData.lift = lift
     placeFlower(fg, pos)
     this._followRing(fg)
@@ -289,9 +288,15 @@ export class BouquetStage {
     const R = this.group.userData.R || 1
     const pos = head.position.clone()
     if (d.vertical) {
-      // Shift: sube o baja la flor
-      pos.y = THREE.MathUtils.clamp(hit.y, -1.4, 1.8)
-      fg.userData.lift = pos.y - domeY(Math.hypot(pos.x, pos.z), R, def)
+      // Shift: alarga o acorta el tallo hasta que la cabeza quede a la altura del puntero
+      const dir = head.position.clone().sub(FOCAL).normalize()
+      if (dir.y > 0.05) {
+        const targetD = (THREE.MathUtils.clamp(hit.y, -1.4, 1.8) - FOCAL.y) / dir.y
+        const base = stemBase(head.position.x, head.position.z, R, def).distanceTo(FOCAL)
+        const lift = THREE.MathUtils.clamp(targetD - base, -1.3, 1.3)
+        pos.copy(withLift(head.position, lift, R, def))
+        fg.userData.lift = liftOf(pos, R, def)
+      }
     } else {
       const bound = this.group.userData.bound
       const maxR = bound ? headLimit(bound, fg.userData.radius) : Math.max(R, 1) + 0.9
@@ -303,7 +308,7 @@ export class BouquetStage {
         z *= maxR / r
         r = maxR
       }
-      pos.set(x, domeY(r, R, def) + fg.userData.lift, z)
+      pos.copy(withLift(stemBase(x, z, R, def), fg.userData.lift, R, def))
     }
     d.moved = true
     placeFlower(fg, pos)
