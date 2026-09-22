@@ -75,6 +75,13 @@ function enqueue(key, run) {
   return p
 }
 
+// Ángulos de cámara por modelo para el catálogo (el resto usa la vista desde arriba).
+const VIEWS = {
+  tulip: { tilt: 0.12, elevation: 0.2, distance: 3.4, targetY: 0.3, azimuth: 0.35 },
+  lily: { tilt: 0.35, elevation: 0.45, distance: 4.4, targetY: 0.15, azimuth: 0.3 },
+  alstroemeria: { tilt: 0.2, elevation: 0.35, distance: 3.8, targetY: 0.35, azimuth: 0.3 },
+}
+
 export function flowerThumbnail(flower, color, size = 420, view = 'auto') {
   const key = `f:${flower.id}:${color.id}:${size}:${view}`
   return enqueue(key, () => {
@@ -84,6 +91,11 @@ export function flowerThumbnail(flower, color, size = 420, view = 'auto') {
     if (view === 'side') {
       head.rotation.x = 0
       return renderObject(head, size, { distance: spike ? 3.6 : 2.4 + r * 3.2, target: [0, spike ? 0.3 : 0.05, 0], elevation: 0.12, azimuth: 0.4 })
+    }
+    const v = VIEWS[flower.model]
+    if (v) {
+      head.rotation.x = v.tilt
+      return renderObject(head, size, { distance: v.distance, target: [0, v.targetY, 0], elevation: v.elevation, azimuth: v.azimuth })
     }
     head.rotation.x = spike ? 0.15 : 0.35
     const dist = spike ? 3.6 : 2.2 + r * 3.4
