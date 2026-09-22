@@ -137,7 +137,7 @@ function relax(slots, rand) {
         let dz = b.z - a.z
         let d = Math.hypot(dx, dz)
         const filler = a.f.def.filler || b.f.def.filler
-        const minD = (a.radius + b.radius) * (filler ? 0.55 : 0.82)
+        const minD = (a.radius + b.radius) * (filler ? 0.42 : 0.66)
         if (d >= minD) continue
         if (d < 1e-4) {
           const ang = rand() * Math.PI * 2

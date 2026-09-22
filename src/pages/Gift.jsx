@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { decodeBouquet, builderUrl } from '../lib/share.js'
+import { decodeBouquet } from '../lib/share.js'
 import { FLOWER_BY_ID } from '../data/flowers.js'
 import { BouquetViewer } from '../components/BouquetViewer.jsx'
 import { Logo } from '../components/Logo.jsx'
@@ -21,7 +21,6 @@ export function Gift({ code }) {
   }
 
   const names = [...new Set(bouquet.items.map((i) => FLOWER_BY_ID[i.flower]?.name).filter(Boolean))]
-  const editUrl = `#${builderUrl(bouquet).split('#')[1]}`
 
   return (
     <div className={`gift ${minimal ? 'gift--minimal' : ''}`}>
@@ -35,14 +34,6 @@ export function Gift({ code }) {
         {bouquet.message && <p className="msg">“{bouquet.message}”</p>}
         {bouquet.from && <p className="from">Con cariño, {bouquet.from}</p>}
         <p className="flowers">{names.join(' · ')}</p>
-        <div className="gift__actions">
-          <a className="btn btn--primary btn--sm" href="#/">
-            Crea tu propio ramo
-          </a>
-          <a className="btn btn--ghost btn--sm" href={editUrl}>
-            Personalizar este ramo
-          </a>
-        </div>
       </div>
       <button className="btn btn--soft btn--sm gift__toggle" onClick={() => setMinimal((m) => !m)}>
         {minimal ? 'Mostrar mensaje' : 'Ocultar mensaje'}

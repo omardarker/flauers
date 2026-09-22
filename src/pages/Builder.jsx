@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { FLOWERS, FLOWER_BY_ID, findColor } from '../data/flowers.js'
 import { WRAPS, RIBBONS } from '../data/bouquets.js'
-import { decodeBouquet, giftUrl, builderUrl } from '../lib/share.js'
+import { decodeBouquet, builderUrl } from '../lib/share.js'
 import { BouquetViewer } from '../components/BouquetViewer.jsx'
 import { FlowerImage } from '../components/FlowerImage.jsx'
 import { ShareModal } from '../components/ShareModal.jsx'
@@ -59,9 +59,8 @@ export function Builder({ code, selection, setSelection }) {
   }
 
   const openShare = () => {
-    const url = giftUrl(bouquet)
     const preview = stageRef.current?.snapshot('image/png')
-    setShare({ url, preview })
+    setShare({ preview })
     // el link del taller también refleja el ramo actual
     window.history.replaceState(null, '', builderUrl(bouquet))
   }
@@ -188,23 +187,6 @@ export function Builder({ code, selection, setSelection }) {
             </div>
           </div>
 
-          <div className="panel__section">
-            <h3>Dedicatoria</h3>
-            <div className="field">
-              <label htmlFor="to">Para</label>
-              <input id="to" value={bouquet.to} maxLength={40} placeholder="Nombre de quien lo recibe" onChange={(e) => update({ to: e.target.value })} />
-            </div>
-            <div className="field">
-              <label htmlFor="msg">Mensaje</label>
-              <textarea id="msg" rows={3} value={bouquet.message} maxLength={240} placeholder="Unas palabras que acompañen el ramo…" onChange={(e) => update({ message: e.target.value })} />
-              <span className="field__count">{bouquet.message.length}/240</span>
-            </div>
-            <div className="field">
-              <label htmlFor="from">De</label>
-              <input id="from" value={bouquet.from} maxLength={40} placeholder="Tu nombre" onChange={(e) => update({ from: e.target.value })} />
-            </div>
-          </div>
-
           <div className="panel__footer">
             <button className="btn btn--primary btn--block" onClick={openShare} disabled={bouquet.items.length === 0}>
               Generar link de regalo
@@ -212,7 +194,7 @@ export function Builder({ code, selection, setSelection }) {
           </div>
         </aside>
       </div>
-      {share && <ShareModal url={share.url} preview={share.preview} bouquet={bouquet} onClose={() => setShare(null)} />}
+      {share && <ShareModal preview={share.preview} bouquet={bouquet} onChange={update} onClose={() => setShare(null)} />}
     </>
   )
 }

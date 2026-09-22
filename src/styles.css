@@ -311,3 +311,11 @@ img { display: block; max-width: 100%; }
 .notfound { text-align: center; padding: 100px 20px; }
 .notfound h1 { font-size: 48px; margin-bottom: 10px; }
 .notfound p { color: var(--ink-soft); margin-bottom: 24px; }
+
+.share--form { text-align: left; }
+.share--form h3, .share--form > p { text-align: center; }
+.share__preview--sm { width: 150px; height: 150px; margin-bottom: 12px; }
+.share__fields { margin-top: 6px; }
+.share__error { color: #a8453f; font-size: 13px; margin-top: -4px; margin-bottom: 8px; text-align: center; }
+.link-btn { background: none; border: 0; color: var(--ink-soft); font-size: 13px; text-decoration: underline; margin-top: 10px; }
+.link-btn:hover { color: var(--forest); }
