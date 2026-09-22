@@ -319,3 +319,6 @@ img { display: block; max-width: 100%; }
 .share__error { color: #a8453f; font-size: 13px; margin-top: -4px; margin-bottom: 8px; text-align: center; }
 .link-btn { background: none; border: 0; color: var(--ink-soft); font-size: 13px; text-decoration: underline; margin-top: 10px; }
 .link-btn:hover { color: var(--forest); }
+
+.gift__loading { position: absolute; inset: 0; display: grid; place-items: center; text-align: center; color: var(--ink-soft); }
+.gift__loading .card__skeleton { width: 140px; height: 140px; margin: 0 auto 14px; }

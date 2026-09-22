@@ -44,8 +44,8 @@ export default function App() {
   }, [route.page])
 
   let page
-  if (route.page === 'gift') page = <Gift code={route.code} />
-  else if (route.page === 'builder') page = <Builder code={route.code} selection={selection} setSelection={setSelection} />
+  if (route.page === 'gift') page = <Gift code={route.code} id={route.id} />
+  else if (route.page === 'builder') page = <Builder code={route.code} gift={route.gift} selection={selection} setSelection={setSelection} />
   else page = <Home selection={selection} setSelection={setSelection} toast={toast} />
 
   return (

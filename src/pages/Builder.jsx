@@ -10,7 +10,7 @@ import { Header } from '../components/Header.jsx'
 const EMPTY = { items: [], wrap: 'kraft', ribbon: 'lino', to: '', from: '', message: '', layout: {} }
 const MAX_STEMS = 40
 
-export function Builder({ code, selection, setSelection }) {
+export function Builder({ code, gift = false, selection, setSelection }) {
   const initial = useMemo(() => {
     if (code) {
       const b = decodeBouquet(code)
@@ -26,6 +26,12 @@ export function Builder({ code, selection, setSelection }) {
   const stageRef = useRef(null)
 
   useEffect(() => setBouquet(initial), [initial])
+  // desde "Regalar este ramo": abre la dedicatoria en cuanto el ramo esté en pantalla
+  useEffect(() => {
+    if (!gift || !initial.items.length) return
+    const t = setTimeout(() => setShare({ preview: stageRef.current?.snapshot('image/png') }), 900)
+    return () => clearTimeout(t)
+  }, [gift, initial])
   // mantiene sincronizada la selección del catálogo
   useEffect(() => setSelection(bouquet.items), [bouquet.items, setSelection])
 

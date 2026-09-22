@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Modal } from './Modal.jsx'
 import { giftUrl } from '../lib/share.js'
+import { createShortLink } from '../lib/api.js'
 
 /**
  * Paso 1: dedicatoria (nombre de quien recibe, mensaje opcional, remitente).
@@ -10,20 +11,29 @@ export function ShareModal({ bouquet, onChange, preview, onClose }) {
   const [step, setStep] = useState('form')
   const [copied, setCopied] = useState(false)
   const [error, setError] = useState('')
+  const [url, setUrl] = useState('')
+  const [isLong, setIsLong] = useState(false)
   useEffect(() => {
     if (!copied) return
     const t = setTimeout(() => setCopied(false), 2500)
     return () => clearTimeout(t)
   }, [copied])
 
-  const url = giftUrl(bouquet)
-
-  const next = () => {
+  const next = async () => {
     if (!bouquet.to.trim()) {
       setError('Escribe el nombre de la persona que recibirá el ramo.')
       return
     }
     setError('')
+    setStep('creating')
+    try {
+      setUrl(await createShortLink(bouquet))
+      setIsLong(false)
+    } catch {
+      // sin API disponible: el ramo viaja completo dentro del link
+      setUrl(giftUrl(bouquet))
+      setIsLong(true)
+    }
     setStep('link')
   }
 
@@ -86,6 +96,18 @@ export function ShareModal({ bouquet, onChange, preview, onClose }) {
     )
   }
 
+  if (step === 'creating') {
+    return (
+      <Modal onClose={onClose} label="Creando link">
+        <div className="share">
+          <div className="share__preview">{preview ? <img src={preview} alt="Vista previa del ramo" /> : <div className="card__skeleton" />}</div>
+          <h3>Preparando el ramo…</h3>
+          <p>Un momento, estamos generando el link de regalo.</p>
+        </div>
+      </Modal>
+    )
+  }
+
   return (
     <Modal onClose={onClose} label="Link de regalo">
       <div className="share">
@@ -111,7 +133,7 @@ export function ShareModal({ bouquet, onChange, preview, onClose }) {
             Ver como lo verá {bouquet.to}
           </a>
         </div>
-        <div className="share__ok">{copied ? 'Link copiado al portapapeles' : ''}</div>
+        <div className="share__ok">{copied ? 'Link copiado al portapapeles' : isLong ? 'El servicio de links cortos no está disponible ahora; este link largo funciona igual.' : ''}</div>
         <button className="link-btn" onClick={() => setStep('form')}>
           Editar dedicatoria
         </button>

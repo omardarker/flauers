@@ -1,8 +1,8 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
-// base './' keeps the build deployable on any static host (GitHub Pages, Netlify, etc.)
+// base '/' : los assets se cargan desde la raíz, necesario para los links cortos /r/<id>
 export default defineConfig({
   plugins: [react()],
-  base: './',
+  base: '/',
 })

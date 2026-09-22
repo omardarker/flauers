@@ -16,8 +16,8 @@ function fromBase64Url(str) {
   return new TextDecoder().decode(bytes)
 }
 
-export function encodeBouquet(bouquet) {
-  const compact = {
+export function compactBouquet(bouquet) {
+  return {
     v: 1,
     i: bouquet.items.map((it) => [it.flower, it.color, it.qty]),
     w: bouquet.wrap,
@@ -27,7 +27,23 @@ export function encodeBouquet(bouquet) {
     m: bouquet.message || undefined,
     l: encodeLayout(bouquet.layout),
   }
-  return toBase64Url(JSON.stringify(compact))
+}
+
+export function encodeBouquet(bouquet) {
+  return toBase64Url(JSON.stringify(compactBouquet(bouquet)))
+}
+
+export function expandCompact(c) {
+  if (!c || !Array.isArray(c.i)) return null
+  return {
+    items: c.i.map(([flower, color, qty]) => ({ flower, color, qty: Number(qty) || 1 })),
+    wrap: c.w || 'kraft',
+    ribbon: c.r || 'lino',
+    to: c.t || '',
+    from: c.f || '',
+    message: c.m || '',
+    layout: decodeLayout(c.l),
+  }
 }
 
 const r2 = (v) => Math.round(v * 100) / 100
@@ -53,28 +69,18 @@ function decodeLayout(rows) {
 
 export function decodeBouquet(code) {
   try {
-    const c = JSON.parse(fromBase64Url(code))
-    if (!c || !Array.isArray(c.i)) return null
-    return {
-      items: c.i.map(([flower, color, qty]) => ({ flower, color, qty: Number(qty) || 1 })),
-      wrap: c.w || 'kraft',
-      ribbon: c.r || 'lino',
-      to: c.t || '',
-      from: c.f || '',
-      message: c.m || '',
-      layout: decodeLayout(c.l),
-    }
+    return expandCompact(JSON.parse(fromBase64Url(code)))
   } catch {
     return null
   }
 }
 
 export function giftUrl(bouquet) {
-  const base = window.location.href.split('#')[0]
+  const base = window.location.origin + '/'
   return `${base}#/regalo/${encodeBouquet(bouquet)}`
 }
 
-export function builderUrl(bouquet) {
-  const base = window.location.href.split('#')[0]
-  return `${base}#/armar/${encodeBouquet(bouquet)}`
+export function builderUrl(bouquet, { gift = false } = {}) {
+  const base = window.location.origin + '/'
+  return `${base}#/armar/${encodeBouquet(bouquet)}${gift ? '/regalar' : ''}`
 }

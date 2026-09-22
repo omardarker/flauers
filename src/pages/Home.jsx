@@ -11,7 +11,7 @@ import { Footer } from '../components/Footer.jsx'
 import { builderUrl } from '../lib/share.js'
 import { navigate } from '../lib/router.js'
 
-export function Home({ selection, setSelection, toast }) {
+export function Home({ selection, setSelection }) {
   const [info, setInfo] = useState(null)
   const heroBouquet = useMemo(() => presetToBouquet(PRESET_BOUQUETS[0]), [])
 
@@ -29,15 +29,6 @@ export function Home({ selection, setSelection, toast }) {
   const generate = () => {
     const bouquet = { items: selection, wrap: 'kraft', ribbon: 'lino', to: '', from: '', message: '' }
     navigate(`#${builderUrl(bouquet).split('#')[1]}`)
-  }
-
-  const copy = async (url) => {
-    try {
-      await navigator.clipboard.writeText(url)
-      toast('Link de regalo copiado')
-    } catch {
-      toast('No se pudo copiar. Abre el ramo y copia el link desde ahí.')
-    }
   }
 
   return (
@@ -75,11 +66,11 @@ export function Home({ selection, setSelection, toast }) {
               <span className="eyebrow">Listos para regalar</span>
               <h2>Ramos prearmados</h2>
             </div>
-            <p>Combinaciones pensadas por nosotros. Copia el link y listo, o ábrelo en 3D y cámbialo a tu gusto.</p>
+            <p>Combinaciones pensadas por nosotros. Regálalo tal cual con tu dedicatoria, o ábrelo en 3D y cámbialo a tu gusto.</p>
           </div>
           <div className="grid grid--wide">
             {PRESET_BOUQUETS.map((p) => (
-              <PresetCard key={p.id} preset={p} onCopy={copy} />
+              <PresetCard key={p.id} preset={p} />
             ))}
           </div>
         </section>
