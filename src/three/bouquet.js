@@ -32,6 +32,7 @@ export const SIZE = {
   eucalyptus: 0.45,
   begonia: 0.45,
   alstroemeria: 0.55,
+  craspedia: 0.26,
 }
 
 function sizeOf(def) {

@@ -80,6 +80,7 @@ const VIEWS = {
   tulip: { tilt: 0.05, elevation: 0.12, distance: 4.6, targetY: 0.0, azimuth: 0.3 },
   lily: { tilt: 0.35, elevation: 0.45, distance: 4.4, targetY: 0.15, azimuth: 0.3 },
   alstroemeria: { tilt: 0.2, elevation: 0.35, distance: 3.8, targetY: 0.35, azimuth: 0.3 },
+  craspedia: { tilt: 0.1, elevation: 0.25, distance: 3.2, targetY: -0.35, azimuth: 0.3 },
 }
 
 export function flowerThumbnail(flower, color, size = 420, view = 'auto') {

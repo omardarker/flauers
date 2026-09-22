@@ -312,6 +312,27 @@ export const FLOWERS = [
     },
   },
   {
+    id: 'craspedia',
+    name: 'Craspedia',
+    sci: 'Craspedia globosa',
+    model: 'craspedia',
+    tagline: 'Esferas doradas',
+    colors: [
+      { id: 'dorado', name: 'Amarillo dorado', hex: '#f5c92a' },
+      { id: 'limon', name: 'Amarillo limón', hex: '#f6dc4c' },
+      { id: 'mostaza', name: 'Mostaza (seca)', hex: '#d9a531' },
+    ],
+    info: {
+      familia: 'Asteráceas',
+      origen: 'Australia y Nueva Zelanda, en praderas y zonas alpinas. Conocida como "billy buttons" o "botones de oro".',
+      significado: 'Alegría, buena suerte y un toque de humor. Sus esferas perfectas aportan ritmo y luz a cualquier ramo.',
+      temporada: 'Todo el año como flor cortada; florece de forma natural en verano.',
+      duracion: '2 a 3 semanas fresca; seca conserva el color durante meses.',
+      cuidados: 'Poca agua y limpia. Para secarla, cuélgala boca abajo en un lugar oscuro y ventilado durante dos semanas.',
+      curiosidad: 'Cada esfera son cientos de florecillas tubulares diminutas apretadas en una cabeza de 2 a 3 cm. El tallo no tiene hojas: crecen en la base, plateadas y aterciopeladas.',
+    },
+  },
+  {
     id: 'paniculata',
     name: 'Paniculata',
     sci: 'Gypsophila paniculata',

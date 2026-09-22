@@ -888,6 +888,54 @@ export function alstroemeria({ hex, seed = 16 }) {
   return group([meshOf(geoms)], 0.55)
 }
 
+// ---------------------------------------------------------------- Craspedia
+// Esfera compacta de cientos de florecillas tubulares (textura granulada),
+// amarillo dorado, sobre un tallo largo, delgado, gris verdoso y sin hojas.
+export function craspedia({ hex, seed = 17 }) {
+  const rand = rng(seed)
+  const R = 0.21
+  const core = new THREE.SphereGeometry(R * 0.97, 24, 18)
+  paint(core, shade(hex, -0.14, 0.05))
+  // florecillas: puntos en espiral de Fibonacci sobre la esfera
+  const N = 720
+  const floret = new THREE.SphereGeometry(0.03, 7, 6)
+  floret.scale(1, 1.7, 1) // alargada radialmente
+  paint(floret, hex)
+  const mesh = new THREE.InstancedMesh(floret, floretsMaterial(), N)
+  const m = new THREE.Matrix4()
+  const q = new THREE.Quaternion()
+  const up = new THREE.Vector3(0, 1, 0)
+  const sc = new THREE.Vector3()
+  const c1 = shade(hex, -0.06, 0.05)
+  const c2 = shade(hex, 0.07, -0.03)
+  const colors = new Float32Array(N * 3)
+  const golden = Math.PI * (3 - Math.sqrt(5))
+  for (let i = 0; i < N; i++) {
+    const y = 1 - (i / (N - 1)) * 2
+    const r = Math.sqrt(1 - y * y)
+    const th = i * golden
+    const dir = new THREE.Vector3(Math.cos(th) * r, y, Math.sin(th) * r)
+    const pos = dir.clone().multiplyScalar(R * (0.96 + rand() * 0.06))
+    q.setFromUnitVectors(up, dir)
+    const k = 0.85 + rand() * 0.3
+    sc.set(k, k, k)
+    m.compose(pos, q, sc)
+    mesh.setMatrixAt(i, m)
+    const c = rand() < 0.5 ? c1 : c2
+    colors[i * 3] = c.r
+    colors[i * 3 + 1] = c.g
+    colors[i * 3 + 2] = c.b
+  }
+  mesh.instanceMatrix.needsUpdate = true
+  mesh.instanceColor = new THREE.InstancedBufferAttribute(colors, 3)
+  mesh.castShadow = true
+  // tallo largo, fino y gris verdoso (la craspedia no tiene hojas en el tallo)
+  const stem = new THREE.CylinderGeometry(0.016, 0.02, 1.4, 8, 1)
+  stem.translate(0, -0.7 - R * 0.6, 0)
+  paint(stem, '#9aa88b')
+  return group([meshOf([core, stem], petalMaterial('leaf')), mesh], 0.26)
+}
+
 export const BUILDERS = {
   rose,
   peony,
@@ -905,6 +953,7 @@ export const BUILDERS = {
   eucalyptus,
   begonia,
   alstroemeria,
+  craspedia,
 }
 
 export function buildFlower(model, opts) {
