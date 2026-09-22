@@ -192,94 +192,99 @@ export function peony({ hex, seed = 2 }) {
 }
 
 // ---------------------------------------------------------------- Tulipán
-// Tulipán: seis tépalos en dos verticilos (tres externos más anchos y tres
-// internos), cada uno es un parche de una superficie ovoide, por eso juntos
-// forman la copa lisa característica. Dentro: seis estambres negros y un
-// pistilo verde de tres lóbulos. Base con mancha amarilla, hoja glauca.
+// Tulipán en capullo: copa cerrada más alta que ancha, seis tépalos que se
+// solapan y cuyas puntas convergen arriba formando una corona de picos; base
+// clara verdosa; dos hojas largas lanceoladas que suben desde el tallo.
 export function tulip({ hex, seed = 3 }) {
   const rand = rng(seed)
-  const base = shade(hex, -0.12, 0.06, 0.005)
-  const tip = shade(hex, 0.05, -0.02)
-  const edge = shade(hex, 0.12, -0.06)
-  const blotch = shade('#e6cf62', -0.02).lerp(new THREE.Color(hex), 0.35)
-  const openness = 0.9 + rand() * 0.25 // cuánto se abre la copa (variación por flor)
-  const H = 0.74
-  const rMax = 0.35 * openness
-  // perfil de huevo: base estrecha, vientre a 60 %, punta algo cerrada
+  const base = shade(hex, -0.08, 0.05, 0.005)
+  const tip = shade(hex, 0.03, 0)
+  const edge = shade(hex, 0.14, -0.08)
+  const pale = new THREE.Color('#eef0d2').lerp(new THREE.Color(hex), 0.25) // base blanquecina
+  const closed = 0.92 + rand() * 0.08 // 1 = totalmente cerrado
+  const H = 0.9
+  const rMax = 0.31
+  const rTop = 0.11 + 0.08 * (1 - closed)
+  // perfil de huevo alargado: base redondeada, vientre al 42 % y cierre suave arriba
   const profile = (t) => {
-    const belly = 0.09 + (rMax - 0.09) * (1 - Math.pow(1 - Math.min(1, t / 0.62), 2.2))
-    const close = 1 - 0.22 * smoothstep(0.62, 1, t) * (1.4 - openness)
-    return belly * close
+    if (t < 0.42) return 0.15 + (rMax - 0.15) * Math.sin((Math.PI / 2) * (t / 0.42))
+    const u = (t - 0.42) / 0.58
+    return rMax - (rMax - rTop) * (1 - Math.cos(Math.PI * u)) / 2
   }
-  // contorno: base estrecha, ancho máximo a la mitad, punta suave y apenas apuntada
+  // contorno: base ancha para solaparse, punta suavemente apuntada
   const widthFn = (t) => {
-    if (t < 0.5) return 0.42 + 0.58 * smoothstep(0, 0.5, t)
-    return 1 - 0.9 * Math.pow((t - 0.5) / 0.5, 1.5)
+    if (t < 0.45) return 0.72 + 0.28 * smoothstep(0, 0.45, t)
+    return 1 - 0.85 * Math.pow((t - 0.45) / 0.55, 1.2)
   }
   const tepal = (outer) => (i) =>
     makeCupPetal({
-      height: outer ? H : H * 1.03,
-      span: outer ? 2.75 : 2.35,
-      profile: (t) => profile(t) * (outer ? 1 : 0.93),
+      height: outer ? H : H * 1.01,
+      span: outer ? 2.5 : 2.3,
+      profile: (t) => profile(t) * (outer ? 1 : 0.95),
       widthFn,
-      flare: 0.02 + (openness - 0.9) * 0.15,
-      tipStart: 0.75,
-      twist: (rand() - 0.5) * 0.08,
+      flare: 0,
+      tipStart: 0.8,
+      twist: (rand() - 0.5) * 0.06,
       colorBase: base,
       colorTip: tip,
       colorEdge: edge,
-      edgeAmount: 0.35,
-      colorBlotch: blotch,
-      blotchEnd: 0.22,
+      edgeAmount: 0.3,
+      colorBlotch: pale,
+      blotchEnd: 0.16,
       nx: 16,
-      ny: 22,
+      ny: 24,
     })
   const geoms = [
-    ...whorl(tepal(true), { n: 3, r0: 0, y0: 0.02, tilt: 0, seed, jitter: 0.03, scaleJitter: 0.02 }),
-    ...whorl(tepal(false), { n: 3, r0: 0, y0: 0.03, tilt: 0, phase: Math.PI / 3, seed: seed + 1, jitter: 0.03, scaleJitter: 0.02 }),
+    ...whorl(tepal(true), { n: 3, r0: 0, y0: 0.02, tilt: 0, seed, jitter: 0.03, scaleJitter: 0.015 }),
+    ...whorl(tepal(false), { n: 3, r0: 0, y0: 0.03, tilt: 0, phase: Math.PI / 3, seed: seed + 1, jitter: 0.03, scaleJitter: 0.015 }),
   ]
-  // receptáculo y unión con el tallo
-  const recept = new THREE.SphereGeometry(0.11, 16, 12)
-  recept.scale(1, 0.75, 1)
-  recept.translate(0, 0.0, 0)
-  geoms.push(paint(recept, '#8fae74'))
-  const neck = new THREE.CylinderGeometry(0.06, 0.05, 0.22, 12, 1)
-  neck.translate(0, -0.12, 0)
-  geoms.push(paint(neck, '#86a56c'))
-  // pistilo verde con estigma de tres lóbulos
-  const style = new THREE.CylinderGeometry(0.035, 0.045, 0.26, 10, 1)
-  style.translate(0, 0.16, 0)
-  geoms.push(paint(style, '#a9c47a'))
-  for (let i = 0; i < 3; i++) {
-    const th = (i / 3) * Math.PI * 2
-    const lobe = new THREE.SphereGeometry(0.035, 8, 6)
-    lobe.scale(1, 0.7, 1.5)
-    lobe.rotateY(th)
-    lobe.translate(Math.sin(th) * 0.035, 0.3, Math.cos(th) * 0.035)
-    geoms.push(paint(lobe, '#c9d98a'))
-  }
-  // seis estambres con anteras negras alargadas
+  // receptáculo pequeño y cuello verde claro
+  const recept = new THREE.SphereGeometry(0.085, 14, 10)
+  recept.scale(1, 0.6, 1)
+  geoms.push(paint(recept, '#b9c98a'))
+  const neck = new THREE.CylinderGeometry(0.05, 0.045, 0.2, 12, 1)
+  neck.translate(0, -0.1, 0)
+  geoms.push(paint(neck, '#9db884'))
+  // tramo de tallo propio (en el ramo se solapa con el tallo generado)
+  const stem = new THREE.CylinderGeometry(0.03, 0.032, 1.3, 10, 1)
+  stem.translate(0, -0.8, 0)
+  geoms.push(paint(stem, '#7a9a62'))
+  // pistilo y estambres (apenas visibles en el capullo)
+  const style = new THREE.CylinderGeometry(0.03, 0.04, 0.3, 8, 1)
+  style.translate(0, 0.17, 0)
+  geoms.push(paint(style, '#b7cc88'))
   const anthers = []
   for (let i = 0; i < 6; i++) {
     const th = (i / 6) * Math.PI * 2 + 0.2
-    const fil = new THREE.CylinderGeometry(0.008, 0.01, 0.22, 5, 1)
-    fil.translate(0, 0.11, 0)
-    fil.rotateX(0.12)
-    fil.rotateY(th)
-    fil.translate(Math.sin(th) * 0.075, 0.04, Math.cos(th) * 0.075)
-    geoms.push(paint(fil, '#d8c86a'))
-    anthers.push(new THREE.Vector3(Math.sin(th) * 0.095, 0.3, Math.cos(th) * 0.095))
+    anthers.push(new THREE.Vector3(Math.sin(th) * 0.07, 0.32, Math.cos(th) * 0.07))
   }
-  const anth = dots(anthers, 0.028, '#2a2320', { widthSeg: 6, heightSeg: 5 })
-  anth.geometry.scale(0.8, 2.4, 0.8)
-  // hoja glauca grande, acanalada, abrazando el tallo
-  geoms.push(
+  const anth = dots(anthers, 0.022, '#2a2320', { widthSeg: 6, heightSeg: 5 })
+  anth.geometry.scale(0.8, 2.2, 0.8)
+  // dos hojas lanceoladas largas, acanaladas, que suben desde el tallo
+  const leaf = (sign, len, lean) =>
     transformed(
-      makePetal({ length: 1.05, width: 0.34, bend: 0.4, curl: 0.3, cup: 0.9, pointy: 1.2, tipStart: 0.45, twist: 0.35, baseW: 0.7, mid: 0.3, colorBase: '#6f8f6c', colorTip: '#8fae88', nx: 6, ny: 12, seed }),
-      { pos: [0.06, -0.85, 0.06], rot: [0.22, 0.9, 0] },
-    ),
-  )
-  return group([meshOf(geoms, petalMaterial('waxy')), anth], 0.36)
+      makePetal({
+        length: len,
+        width: 0.3,
+        bend: 0.55,
+        curl: 0.35,
+        cup: 0.8,
+        pointy: 1.4,
+        tipStart: 0.4,
+        twist: sign * 0.25,
+        baseW: 0.75,
+        mid: 0.25,
+        colorBase: '#6a8f66',
+        colorTip: '#8fb287',
+        occlusion: 0.15,
+        nx: 6,
+        ny: 14,
+        seed: seed + (sign > 0 ? 1 : 2),
+      }),
+      { pos: [sign * 0.06, -1.25, 0.02], rot: [lean, sign * 1.35, 0] },
+    )
+  geoms.push(leaf(1, 1.35, 0.22), leaf(-1, 1.2, 0.28))
+  return group([meshOf(geoms, petalMaterial('waxy')), anth], 0.34)
 }
 
 // ---------------------------------------------------------------- Girasol

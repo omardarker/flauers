@@ -77,7 +77,7 @@ function enqueue(key, run) {
 
 // Ángulos de cámara por modelo para el catálogo (el resto usa la vista desde arriba).
 const VIEWS = {
-  tulip: { tilt: 0.12, elevation: 0.2, distance: 3.4, targetY: 0.3, azimuth: 0.35 },
+  tulip: { tilt: 0.05, elevation: 0.12, distance: 4.6, targetY: 0.0, azimuth: 0.3 },
   lily: { tilt: 0.35, elevation: 0.45, distance: 4.4, targetY: 0.15, azimuth: 0.3 },
   alstroemeria: { tilt: 0.2, elevation: 0.35, distance: 3.8, targetY: 0.35, azimuth: 0.3 },
 }
