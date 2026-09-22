@@ -894,20 +894,21 @@ export function alstroemeria({ hex, seed = 16 }) {
 export function craspedia({ hex, seed = 17 }) {
   const rand = rng(seed)
   const R = 0.21
-  const core = new THREE.SphereGeometry(R * 0.97, 24, 18)
-  paint(core, shade(hex, -0.14, 0.05))
-  // florecillas: puntos en espiral de Fibonacci sobre la esfera
-  const N = 720
-  const floret = new THREE.SphereGeometry(0.03, 7, 6)
-  floret.scale(1, 1.7, 1) // alargada radialmente
+  const core = new THREE.SphereGeometry(R * 0.99, 24, 18)
+  paint(core, shade(hex, -0.18, 0.06))
+  // florecillas: conos de cinco puntas (florecilla tubular con lóbulos) en
+  // espiral de Fibonacci; dan la superficie rasposa y puntiaguda
+  const N = 1500
+  const floret = new THREE.ConeGeometry(0.024, 0.042, 5, 1, false)
+  floret.translate(0, 0.014, 0)
   paint(floret, hex)
   const mesh = new THREE.InstancedMesh(floret, floretsMaterial(), N)
   const m = new THREE.Matrix4()
   const q = new THREE.Quaternion()
   const up = new THREE.Vector3(0, 1, 0)
   const sc = new THREE.Vector3()
-  const c1 = shade(hex, -0.06, 0.05)
-  const c2 = shade(hex, 0.07, -0.03)
+  const c1 = shade(hex, -0.08, 0.06)
+  const c2 = shade(hex, 0.06, -0.02)
   const colors = new Float32Array(N * 3)
   const golden = Math.PI * (3 - Math.sqrt(5))
   for (let i = 0; i < N; i++) {
@@ -915,10 +916,12 @@ export function craspedia({ hex, seed = 17 }) {
     const r = Math.sqrt(1 - y * y)
     const th = i * golden
     const dir = new THREE.Vector3(Math.cos(th) * r, y, Math.sin(th) * r)
-    const pos = dir.clone().multiplyScalar(R * (0.96 + rand() * 0.06))
+    const pos = dir.clone().multiplyScalar(R * (0.95 + rand() * 0.04))
     q.setFromUnitVectors(up, dir)
+    // giro aleatorio sobre su eje para que las puntas no queden alineadas
+    q.multiply(new THREE.Quaternion().setFromAxisAngle(up, rand() * Math.PI * 2))
     const k = 0.85 + rand() * 0.3
-    sc.set(k, k, k)
+    sc.set(k, 0.85 + rand() * 0.3, k)
     m.compose(pos, q, sc)
     mesh.setMatrixAt(i, m)
     const c = rand() < 0.5 ? c1 : c2
