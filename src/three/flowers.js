@@ -201,20 +201,20 @@ export function tulip({ hex, seed = 3 }) {
   const tip = shade(hex, 0.03, 0)
   const edge = shade(hex, 0.14, -0.08)
   const pale = new THREE.Color('#eef0d2').lerp(new THREE.Color(hex), 0.25) // base blanquecina
-  const closed = 0.92 + rand() * 0.08 // 1 = totalmente cerrado
-  const H = 0.9
-  const rMax = 0.31
-  const rTop = 0.11 + 0.08 * (1 - closed)
-  // perfil de huevo alargado: base redondeada, vientre al 42 % y cierre suave arriba
+  const closed = 0.5 + rand() * 0.2 // 0 = muy abierto, 1 = cerrado
+  const H = 0.86
+  const rMax = 0.33
+  const rTop = rMax * (0.78 - closed * 0.22) // boca abierta ≈ 2/3 del ancho máximo
+  // perfil de copa: base redondeada y estrecha, vientre al 58 % y boca abierta
   const profile = (t) => {
-    if (t < 0.42) return 0.15 + (rMax - 0.15) * Math.sin((Math.PI / 2) * (t / 0.42))
-    const u = (t - 0.42) / 0.58
+    if (t < 0.58) return 0.13 + (rMax - 0.13) * Math.sin((Math.PI / 2) * (t / 0.58))
+    const u = (t - 0.58) / 0.42
     return rMax - (rMax - rTop) * (1 - Math.cos(Math.PI * u)) / 2
   }
-  // contorno: base ancha para solaparse, punta suavemente apuntada
+  // contorno: base ancha para solaparse, punta redondeada con ligero pico
   const widthFn = (t) => {
-    if (t < 0.45) return 0.72 + 0.28 * smoothstep(0, 0.45, t)
-    return 1 - 0.85 * Math.pow((t - 0.45) / 0.55, 1.2)
+    if (t < 0.5) return 0.74 + 0.26 * smoothstep(0, 0.5, t)
+    return 1 - 0.88 * Math.pow((t - 0.5) / 0.5, 1.3)
   }
   const tepal = (outer) => (i) =>
     makeCupPetal({
@@ -222,8 +222,8 @@ export function tulip({ hex, seed = 3 }) {
       span: outer ? 2.5 : 2.3,
       profile: (t) => profile(t) * (outer ? 1 : 0.95),
       widthFn,
-      flare: 0,
-      tipStart: 0.8,
+      flare: 0.035,
+      tipStart: 0.82,
       twist: (rand() - 0.5) * 0.06,
       colorBase: base,
       colorTip: tip,
