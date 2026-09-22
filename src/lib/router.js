@@ -14,6 +14,7 @@ export function parseHash(hash = window.location.hash) {
     return { page: 'builder', code, gift }
   }
   if (page === 'regalo') return { page: 'gift', code: rest.join('/') }
+  if (page.startsWith('lab')) return { page: 'lab', code: '' }
   return { page: 'home', code: '' }
 }
 

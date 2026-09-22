@@ -20,17 +20,17 @@ export function createRenderer(canvas, { alpha = true, shadows = true } = {}) {
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha, powerPreference: 'high-performance' })
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2))
   renderer.outputColorSpace = THREE.SRGBColorSpace
-  renderer.toneMapping = THREE.ACESFilmicToneMapping
-  renderer.toneMappingExposure = 1.05
+  renderer.toneMapping = THREE.NeutralToneMapping
+  renderer.toneMappingExposure = 1.0
   renderer.shadowMap.enabled = shadows
   renderer.shadowMap.type = THREE.PCFSoftShadowMap
   return renderer
 }
 
 export function addLights(scene, { shadows = true } = {}) {
-  const hemi = new THREE.HemisphereLight(0xfff7ea, 0xb8c3a4, 1.0)
+  const hemi = new THREE.HemisphereLight(0xfff7ea, 0xc9cfb8, 1.15)
   scene.add(hemi)
-  const key = new THREE.DirectionalLight(0xfff1dc, 1.9)
+  const key = new THREE.DirectionalLight(0xfff3e2, 1.7)
   key.position.set(3.5, 6, 4)
   key.castShadow = shadows
   if (shadows) {
@@ -44,10 +44,10 @@ export function addLights(scene, { shadows = true } = {}) {
     key.shadow.bias = -0.0002
     key.shadow.normalBias = 0.03
     key.shadow.radius = 5
-    key.shadow.intensity = 0.55
+    key.shadow.intensity = 0.38
   }
   scene.add(key)
-  const fill = new THREE.DirectionalLight(0xdfe9ff, 0.5)
+  const fill = new THREE.DirectionalLight(0xe4ecff, 0.65)
   fill.position.set(-4, 2, -3)
   scene.add(fill)
   const rim = new THREE.DirectionalLight(0xffe3c4, 0.6)
@@ -67,7 +67,7 @@ export class BouquetStage {
     addLights(this.scene)
 
     this.camera = new THREE.PerspectiveCamera(32, 1, 0.1, 100)
-    this.camera.position.set(0.6, 2.4, 8.0)
+    this.camera.position.set(0.6, 3.4, 7.4)
 
     this.controls = new OrbitControls(this.camera, canvas)
     this.controls.target.set(0, targetY, 0)

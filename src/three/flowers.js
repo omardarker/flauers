@@ -4,7 +4,7 @@
 // group.userData.radius ≈ radio de la cabeza (para espaciar el ramo).
 
 import * as THREE from 'three'
-import { makePetal, whorl, paint, shade, meshOf, dots, transformed, rng, mergeGeometries } from './petals.js'
+import { makePetal, whorl, spiral, paint, shade, meshOf, dots, transformed, rng, mergeGeometries } from './petals.js'
 
 const GREEN = '#5e7d4f'
 const GREEN_LIGHT = '#8aa66f'
@@ -36,6 +36,14 @@ function sepals({ n = 5, len = 0.32, width = 0.12, tilt = 1.3, y0 = -0.06, r0 = 
   )
 }
 
+// Núcleo ovoide del color de la flor bajo el centro de pétalos.
+function core(radius, height, color, y) {
+  const g = new THREE.SphereGeometry(radius, 12, 10)
+  g.scale(1, height / radius / 2, 1)
+  g.translate(0, y, 0)
+  return paint(g, color)
+}
+
 function calyx(radius, height, color = GREEN, y = -height / 2) {
   const g = new THREE.SphereGeometry(radius, 12, 8)
   g.scale(1, height / radius / 2, 1)
@@ -55,170 +63,219 @@ function fibonacciDisc(count, R, y = 0, bulge = 0) {
 }
 
 // ---------------------------------------------------------------- Rosa
+// Rosa híbrida de té abierta: capullo enrollado en el centro que sube en cono,
+// espiral de pétalos anchos y acopados, y los exteriores reflejados hacia atrás.
 export function rose({ hex, seed = 1 }) {
-  const base = shade(hex, -0.08, 0.05)
-  const tip = shade(hex, 0.06)
-  const edge = shade(hex, 0.12, -0.05)
-  const layers = [
-    { n: 3, r0: 0.0, len: 0.3, w: 0.2, tilt: -0.1, bend: 0.2, curl: 0.0, cup: 0.9, y0: 0.02, scale: 0.9 },
-    { n: 5, r0: 0.03, len: 0.34, w: 0.28, tilt: 0.1, bend: 0.35, curl: 0.3, cup: 0.7, y0: 0.0 },
-    { n: 7, r0: 0.07, len: 0.38, w: 0.34, tilt: 0.35, bend: 0.55, curl: 0.7, cup: 0.55, y0: -0.02 },
-    { n: 9, r0: 0.12, len: 0.4, w: 0.38, tilt: 0.65, bend: 0.7, curl: 1.0, cup: 0.45, y0: -0.05 },
-    { n: 11, r0: 0.17, len: 0.42, w: 0.4, tilt: 0.95, bend: 0.8, curl: 1.3, cup: 0.35, y0: -0.09 },
-    { n: 12, r0: 0.22, len: 0.4, w: 0.42, tilt: 1.25, bend: 0.7, curl: 1.5, cup: 0.3, y0: -0.14 },
-  ]
+  const base = shade(hex, -0.1, 0.06)
+  const tip = shade(hex, 0.05)
+  const edge = shade(hex, 0.13, -0.06)
   const geoms = []
-  layers.forEach((L, li) => {
-    geoms.push(
-      ...whorl(
-        (i) =>
-          makePetal({
-            length: L.len,
-            width: L.w,
-            bend: L.bend,
-            curl: L.curl,
-            cup: L.cup,
-            baseW: 0.35,
-            mid: 0.55,
-            tipStart: 0.72,
-            ruffle: 0.01,
-            colorBase: base,
-            colorTip: tip,
-            colorEdge: edge,
-            seed: seed * 7 + li * 13 + i,
-          }),
-        { n: L.n, r0: L.r0, y0: L.y0, tilt: L.tilt, phase: li * 0.7, jitter: 0.12, scale: L.scale || 1, seed: seed + li },
-      ),
-    )
-  })
-  geoms.push(...sepals({ n: 5, seed, y0: -0.16, r0: 0.12, tilt: 1.35 }))
-  geoms.push(calyx(0.13, 0.28, GREEN, -0.2))
+  // centro enrollado
+  geoms.push(
+    ...spiral(
+      (i, t) =>
+        makePetal({
+          length: 0.3 + t * 0.08,
+          width: 0.26 + t * 0.1,
+          bend: -0.25 + t * 0.35,
+          curl: 0.1,
+          cup: 1.3 - t * 0.5,
+          baseW: 0.5,
+          mid: 0.5,
+          tipStart: 0.8,
+          colorBase: base,
+          colorTip: tip,
+          colorEdge: edge,
+          seed: seed * 7 + i,
+        }),
+      { n: 7, r0: [0.0, 0.04], y0: [0.2, 0.14], tilt: [-0.05, 0.25], scale: [0.85, 1], seed, jitter: 0.06 },
+    ),
+  )
+  // espiral principal
+  geoms.push(
+    ...spiral(
+      (i, t) =>
+        makePetal({
+          length: 0.42,
+          width: 0.5,
+          bend: 0.15 + t * 0.55,
+          curl: 0.3 + t * 1.5,
+          cup: 0.75 - t * 0.5,
+          ruffle: 0.012,
+          baseW: 0.5,
+          mid: 0.45,
+          tipStart: 0.78,
+          colorBase: base,
+          colorTip: tip,
+          colorEdge: edge,
+          seed: seed * 11 + i,
+        }),
+      { n: 26, r0: [0.05, 0.3], y0: [0.12, -0.14], tilt: [0.3, 1.4], scale: [0.8, 1.15], seed: seed + 1, jitter: 0.12, ease: 0.85 },
+    ),
+  )
+  geoms.push(core(0.07, 0.42, shade(hex, -0.14, 0.05), 0.1))
+  geoms.push(...sepals({ n: 5, seed, y0: -0.16, r0: 0.12, tilt: 1.4, len: 0.34 }))
+  geoms.push(calyx(0.13, 0.26, GREEN, -0.24))
   return group([meshOf(geoms)], 0.5)
 }
 
 // ---------------------------------------------------------------- Peonía
+// Peonía: pétalos guarda grandes y acopados formando un cuenco, y una masa
+// de pétalos interiores rizados que llena el centro en forma de cúpula.
 export function peony({ hex, seed = 2 }) {
-  const base = shade(hex, -0.06, 0.04)
+  const base = shade(hex, -0.05, 0.04)
   const tip = shade(hex, 0.1, -0.05)
   const edge = shade(hex, 0.16, -0.1)
-  const layers = [
-    { n: 6, r0: 0.02, len: 0.3, w: 0.26, tilt: 0.15, bend: 0.4, curl: 0.5, cup: 0.6, y0: 0.02 },
-    { n: 9, r0: 0.06, len: 0.38, w: 0.34, tilt: 0.4, bend: 0.5, curl: 0.6, cup: 0.5, y0: 0 },
-    { n: 12, r0: 0.11, len: 0.45, w: 0.4, tilt: 0.7, bend: 0.55, curl: 0.7, cup: 0.4, y0: -0.03 },
-    { n: 14, r0: 0.17, len: 0.5, w: 0.44, tilt: 1.0, bend: 0.5, curl: 0.9, cup: 0.35, y0: -0.07 },
-    { n: 16, r0: 0.23, len: 0.52, w: 0.46, tilt: 1.3, bend: 0.4, curl: 1.0, cup: 0.3, y0: -0.12 },
-  ]
   const geoms = []
-  layers.forEach((L, li) => {
-    geoms.push(
-      ...whorl(
-        (i) =>
-          makePetal({
-            length: L.len,
-            width: L.w,
-            bend: L.bend,
-            curl: L.curl,
-            cup: L.cup,
-            ruffle: 0.035,
-            ruffleFreq: 7,
-            baseW: 0.4,
-            mid: 0.5,
-            tipStart: 0.65,
-            colorBase: base,
-            colorTip: tip,
-            colorEdge: edge,
-            seed: seed * 5 + li * 17 + i,
-          }),
-        { n: L.n, r0: L.r0, y0: L.y0, tilt: L.tilt, phase: li * 0.5, jitter: 0.18, seed: seed + li },
-      ),
-    )
-  })
-  // estambres amarillos en el centro
-  const rand = rng(seed)
-  const stamens = []
-  for (let i = 0; i < 24; i++) {
-    const th = rand() * Math.PI * 2
-    const r = 0.02 + rand() * 0.07
-    stamens.push(new THREE.Vector3(Math.cos(th) * r, 0.22 + rand() * 0.06, Math.sin(th) * r))
-  }
-  geoms.push(...sepals({ n: 5, seed, y0: -0.14, r0: 0.15, tilt: 1.4, len: 0.3, width: 0.16 }))
-  geoms.push(calyx(0.15, 0.3, GREEN, -0.2))
-  return group([meshOf(geoms), dots(stamens, 0.02, '#f0d060')], 0.62)
+  // masa interior
+  geoms.push(
+    ...spiral(
+      (i, t) =>
+        makePetal({
+          length: 0.3 + t * 0.2,
+          width: 0.26 + t * 0.14,
+          bend: 0.1 + t * 0.3,
+          curl: 0.4,
+          cup: 0.7,
+          ruffle: 0.05,
+          ruffleFreq: 8,
+          twist: 0.2,
+          baseW: 0.4,
+          mid: 0.5,
+          tipStart: 0.6,
+          colorBase: base,
+          colorTip: tip,
+          colorEdge: edge,
+          seed: seed * 5 + i,
+        }),
+      { n: 48, r0: [0.02, 0.28], y0: [0.32, 0.02], tilt: [0.1, 1.0], scale: [0.7, 1.0], seed, jitter: 0.3, ease: 0.8 },
+    ),
+  )
+  // pétalos guarda
+  geoms.push(
+    ...whorl(
+      (i) =>
+        makePetal({
+          length: 0.56,
+          width: 0.6,
+          bend: 0.45,
+          curl: 0.5,
+          cup: 0.55,
+          ruffle: 0.03,
+          ruffleFreq: 5,
+          baseW: 0.45,
+          mid: 0.5,
+          tipStart: 0.62,
+          colorBase: base,
+          colorTip: tip,
+          colorEdge: edge,
+          seed: seed * 13 + i,
+        }),
+      { n: 9, r0: 0.2, y0: -0.06, tilt: 1.05, jitter: 0.15, seed: seed + 3 },
+    ),
+  )
+  geoms.push(
+    ...whorl(
+      (i) => makePetal({ length: 0.52, width: 0.6, bend: 0.4, curl: 0.7, cup: 0.4, ruffle: 0.03, baseW: 0.45, tipStart: 0.62, colorBase: base, colorTip: tip, colorEdge: edge, seed: seed * 17 + i }),
+      { n: 10, r0: 0.26, y0: -0.12, tilt: 1.35, phase: 0.3, jitter: 0.15, seed: seed + 4 },
+    ),
+  )
+  geoms.push(core(0.1, 0.5, shade(hex, -0.1, 0.03), 0.12))
+  geoms.push(...sepals({ n: 5, seed, y0: -0.16, r0: 0.15, tilt: 1.45, len: 0.3, width: 0.16 }))
+  geoms.push(calyx(0.15, 0.28, GREEN, -0.24))
+  return group([meshOf(geoms)], 0.64)
 }
 
 // ---------------------------------------------------------------- Tulipán
+// Tulipán: copa ovoide cerrada de seis pétalos anchos y lisos, en dos verticilos.
 export function tulip({ hex, seed = 3 }) {
-  const base = shade(hex, -0.12, 0.05, 0.01)
-  const tip = shade(hex, 0.04)
-  const edge = shade(hex, 0.1)
-  const petal = (i) =>
+  const base = shade(hex, -0.14, 0.06, 0.01)
+  const tip = shade(hex, 0.03)
+  const edge = shade(hex, 0.09)
+  const petal = (wide) => (i) =>
     makePetal({
-      length: 0.62,
-      width: 0.4,
-      bend: 0.25,
-      curl: -0.35,
-      cup: 0.75,
-      baseW: 0.45,
-      mid: 0.45,
-      tipStart: 0.62,
-      pointy: 0.9,
+      length: 0.72,
+      width: wide ? 0.52 : 0.46,
+      bend: 0.05,
+      curl: -0.2,
+      cup: 0.95,
+      baseW: 0.55,
+      mid: 0.4,
+      tipStart: 0.68,
+      pointy: 0.55,
       colorBase: base,
       colorTip: tip,
       colorEdge: edge,
+      nx: 12,
+      ny: 18,
       seed: seed + i,
     })
   const geoms = [
-    ...whorl(petal, { n: 3, r0: 0.08, y0: 0, tilt: 0.12, seed, jitter: 0.06 }),
-    ...whorl(petal, { n: 3, r0: 0.1, y0: -0.01, tilt: 0.22, phase: Math.PI / 3, seed: seed + 1, jitter: 0.06 }),
+    ...whorl(petal(true), { n: 3, r0: 0.09, y0: 0, tilt: 0.18, seed, jitter: 0.04 }),
+    ...whorl(petal(false), { n: 3, r0: 0.11, y0: -0.01, tilt: 0.28, phase: Math.PI / 3, seed: seed + 1, jitter: 0.04 }),
   ]
-  geoms.push(calyx(0.1, 0.22, GREEN_LIGHT, -0.08))
-  // hoja larga típica del tulipán
+  const recept = new THREE.SphereGeometry(0.1, 14, 10)
+  recept.scale(1, 0.7, 1)
+  recept.translate(0, -0.03, 0)
+  geoms.push(paint(recept, GREEN_LIGHT))
   geoms.push(
     transformed(
-      makePetal({ length: 0.9, width: 0.22, bend: 0.5, cup: 0.5, pointy: 1.3, tipStart: 0.4, colorBase: GREEN, colorTip: GREEN_LIGHT, nx: 4, ny: 8 }),
-      { pos: [0.08, -0.55, 0.08], rot: [0.35, 0.8, 0] },
+      makePetal({ length: 0.95, width: 0.24, bend: 0.45, cup: 0.6, pointy: 1.3, tipStart: 0.4, twist: 0.3, colorBase: GREEN, colorTip: GREEN_LIGHT, nx: 5, ny: 10 }),
+      { pos: [0.08, -0.6, 0.08], rot: [0.3, 0.8, 0] },
     ),
   )
-  return group([meshOf(geoms)], 0.32)
+  return group([meshOf(geoms)], 0.34)
 }
 
 // ---------------------------------------------------------------- Girasol
+// Girasol: disco grueso de flósculos, dos filas de lígulas lanceoladas que
+// caen ligeramente en la punta, y brácteas verdes detrás.
 export function sunflower({ hex, seed = 4 }) {
   const base = shade(hex, -0.1, 0.1)
-  const tip = shade(hex, 0.05)
-  const petal = (i) =>
+  const tip = shade(hex, 0.04)
+  const petal = (droop) => (i) =>
     makePetal({
-      length: 0.62,
-      width: 0.15,
-      bend: 0.5,
-      curl: 0.2,
-      cup: 0.3,
-      baseW: 0.55,
+      length: 0.66,
+      width: 0.16,
+      bend: 0.35,
+      curl: droop,
+      cup: 0.35,
+      baseW: 0.45,
       mid: 0.35,
-      tipStart: 0.6,
-      pointy: 1.1,
-      twist: 0.15,
+      tipStart: 0.62,
+      pointy: 1.0,
+      twist: 0.12,
       colorBase: base,
       colorTip: tip,
       nx: 5,
-      ny: 10,
+      ny: 12,
       seed: seed + i,
     })
   const geoms = [
-    ...whorl(petal, { n: 24, r0: 0.4, y0: 0.02, tilt: 1.25, seed, jitter: 0.1 }),
-    ...whorl(petal, { n: 24, r0: 0.4, y0: -0.02, tilt: 1.45, phase: Math.PI / 24, seed: seed + 1, jitter: 0.1, scale: 0.95 }),
+    ...whorl(petal(0.35), { n: 26, r0: 0.44, y0: 0.05, tilt: 1.2, seed, jitter: 0.1 }),
+    ...whorl(petal(0.6), { n: 26, r0: 0.45, y0: 0.0, tilt: 1.4, phase: Math.PI / 26, seed: seed + 1, jitter: 0.1, scale: 0.95 }),
   ]
-  const disc = new THREE.SphereGeometry(0.45, 32, 12, 0, Math.PI * 2, 0, Math.PI / 2)
-  disc.scale(1, 0.28, 1)
+  // disco: cúpula gruesa + reverso cónico
+  const disc = new THREE.SphereGeometry(0.46, 40, 14, 0, Math.PI * 2, 0, Math.PI / 2)
+  disc.scale(1, 0.34, 1)
+  disc.translate(0, 0.02, 0)
   geoms.push(paint(disc, '#3a2415'))
-  const back = new THREE.CircleGeometry(0.46, 32)
-  back.rotateX(Math.PI / 2)
-  back.translate(0, -0.005, 0)
+  const back = new THREE.ConeGeometry(0.48, 0.22, 40, 1, false)
+  back.rotateX(Math.PI)
+  back.translate(0, -0.09, 0)
   geoms.push(paint(back, GREEN))
-  geoms.push(...sepals({ n: 13, len: 0.3, width: 0.1, tilt: 1.5, y0: -0.02, r0: 0.38, seed }))
-  const seeds = fibonacciDisc(260, 0.42, 0.06, 0.08)
-  const seedDots = dots(seeds, 0.028, '#5a3a1e', { scaleFn: (i) => 0.6 + 0.4 * ((i * 7919) % 100) / 100 })
-  return group([meshOf(geoms), seedDots], 0.95)
+  geoms.push(...sepals({ n: 16, len: 0.34, width: 0.11, tilt: 1.55, y0: 0.0, r0: 0.4, seed }))
+  geoms.push(...sepals({ n: 12, len: 0.28, width: 0.1, tilt: 1.65, y0: -0.05, r0: 0.36, seed: seed + 2 }))
+  const seeds = fibonacciDisc(300, 0.43, 0.06, 0.12)
+  const seedDots = dots(seeds, 0.026, '#5a3a1e', { scaleFn: (i) => 0.6 + 0.4 * ((i * 7919) % 100) / 100 })
+  // anillo de flósculos abiertos (amarillo oscuro) en el borde del disco
+  const ring = []
+  for (let i = 0; i < 60; i++) {
+    const th = (i / 60) * Math.PI * 2
+    ring.push(new THREE.Vector3(Math.cos(th) * 0.42, 0.1, Math.sin(th) * 0.42))
+  }
+  const ringDots = dots(ring, 0.022, '#b8862a')
+  return group([meshOf(geoms), seedDots, ringDots], 0.95)
 }
 
 // ---------------------------------------------------------------- Margarita / Gerbera
@@ -259,14 +316,14 @@ function daisyLike({ hex, seed, petalsPerRing, rings, len, width, centerColor, c
     )
   }
   const center = new THREE.SphereGeometry(centerR, 24, 10, 0, Math.PI * 2, 0, Math.PI / 2)
-  center.scale(1, 0.45, 1)
+  center.scale(1, 0.6, 1)
   geoms.push(paint(center, centerColor))
   const back = new THREE.CircleGeometry(centerR * 1.02, 24)
   back.rotateX(Math.PI / 2)
   geoms.push(paint(back, GREEN))
   geoms.push(...sepals({ n: 9, len: 0.22, width: 0.08, tilt: 1.5, y0: -0.03, r0: centerR * 0.9, seed }))
-  geoms.push(calyx(centerR * 0.9, 0.2, GREEN, -0.1))
-  const pts = fibonacciDisc(centerDots.count, centerR * 0.9, centerR * 0.3, centerR * 0.2)
+  geoms.push(calyx(centerR * 0.7, 0.14, GREEN, -0.07))
+  const pts = fibonacciDisc(centerDots.count, centerR * 0.9, centerR * 0.35, centerR * 0.3)
   return group([meshOf(geoms), dots(pts, centerDots.size, centerDots.color)], radius)
 }
 
@@ -304,70 +361,95 @@ export function gerbera({ hex, seed = 6 }) {
 }
 
 // ---------------------------------------------------------------- Lirio
+// Lirio oriental: seis tépalos largos que salen de un tubo corto, se abren en
+// estrella y se curvan hacia atrás en la punta; estambres largos con anteras grandes.
 export function lily({ hex, seed = 7 }) {
   const base = shade(hex, -0.05, 0.1)
   const tip = shade(hex, 0.18, -0.15)
-  const edge = shade(hex, 0.22, -0.2)
+  const edge = shade(hex, 0.24, -0.2)
   const petal = (wide) => (i) =>
     makePetal({
-      length: 0.85,
-      width: wide ? 0.34 : 0.26,
-      bend: 0.55,
-      curl: 1.1,
-      cup: 0.45,
-      baseW: 0.3,
-      mid: 0.5,
-      tipStart: 0.55,
-      pointy: 0.8,
-      ruffle: 0.02,
-      ruffleFreq: 6,
+      length: 1.05,
+      width: wide ? 0.36 : 0.26,
+      bend: 0.9,
+      curl: 1.3,
+      cup: 0.5,
+      baseW: 0.22,
+      mid: 0.45,
+      tipStart: 0.6,
+      pointy: 0.75,
+      ruffle: 0.03,
+      ruffleFreq: 5,
       colorBase: base,
       colorTip: tip,
       colorEdge: edge,
-      nx: 6,
-      ny: 14,
+      nx: 8,
+      ny: 18,
       seed: seed + i,
     })
   const geoms = [
-    ...whorl(petal(true), { n: 3, r0: 0.04, y0: 0, tilt: 0.75, seed, jitter: 0.08 }),
-    ...whorl(petal(false), { n: 3, r0: 0.04, y0: -0.01, tilt: 0.85, phase: Math.PI / 3, seed: seed + 1, jitter: 0.08 }),
+    ...whorl(petal(true), { n: 3, r0: 0.06, y0: 0.1, tilt: 0.35, seed, jitter: 0.06 }),
+    ...whorl(petal(false), { n: 3, r0: 0.06, y0: 0.08, tilt: 0.45, phase: Math.PI / 3, seed: seed + 1, jitter: 0.06 }),
   ]
-  // estambres
+  const tube = new THREE.CylinderGeometry(0.1, 0.06, 0.24, 12, 1, true)
+  tube.translate(0, 0.0, 0)
+  geoms.push(paint(tube, base))
   const rand = rng(seed)
   const anthers = []
+  const anthDirs = []
   for (let i = 0; i < 6; i++) {
     const th = (i / 6) * Math.PI * 2 + rand() * 0.3
-    const dir = new THREE.Vector3(Math.cos(th) * 0.28, 0.5, Math.sin(th) * 0.28)
-    const fil = new THREE.CylinderGeometry(0.008, 0.008, dir.length(), 5, 1)
+    const dir = new THREE.Vector3(Math.cos(th) * 0.5, 0.75, Math.sin(th) * 0.5)
+    const fil = new THREE.CylinderGeometry(0.009, 0.011, dir.length(), 5, 1)
     fil.translate(0, dir.length() / 2, 0)
-    const q = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir.clone().normalize())
-    fil.applyQuaternion(q)
-    geoms.push(paint(fil, '#e9dfc4'))
-    anthers.push(dir)
+    fil.applyQuaternion(new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir.clone().normalize()))
+    fil.translate(0, 0.05, 0)
+    geoms.push(paint(fil, '#eadfc6'))
+    anthers.push(dir.clone().add(new THREE.Vector3(0, 0.05, 0)))
+    anthDirs.push(dir)
   }
-  const pistil = new THREE.CylinderGeometry(0.012, 0.012, 0.6, 5, 1)
-  pistil.translate(0, 0.3, 0)
+  const pistil = new THREE.CylinderGeometry(0.014, 0.016, 0.95, 6, 1)
+  pistil.translate(0, 0.5, 0)
+  pistil.rotateZ(0.12)
   geoms.push(paint(pistil, '#d8c7a4'))
-  geoms.push(calyx(0.1, 0.24, GREEN_LIGHT, -0.1))
-  const antherMesh = dots(anthers, 0.03, '#a2521f', { widthSeg: 6, heightSeg: 4 })
-  antherMesh.geometry.scale(1, 1.8, 1)
-  return group([meshOf(geoms), antherMesh], 0.7)
+  const stigma = new THREE.SphereGeometry(0.04, 8, 6)
+  stigma.scale(1.4, 0.8, 1.4)
+  stigma.translate(-0.11, 0.98, 0)
+  geoms.push(paint(stigma, '#8d4b2b'))
+  geoms.push(calyx(0.09, 0.2, GREEN_LIGHT, -0.12))
+  // anteras: elipsoides tumbados perpendiculares al filamento
+  const antherGeom = new THREE.SphereGeometry(0.06, 8, 6)
+  antherGeom.scale(0.45, 1, 0.45)
+  paint(antherGeom, '#a2521f')
+  const anth = new THREE.InstancedMesh(antherGeom, floretsMaterial(), 6)
+  const m = new THREE.Matrix4()
+  const q = new THREE.Quaternion()
+  anthers.forEach((p, i) => {
+    const tangent = new THREE.Vector3(-anthDirs[i].z, 0, anthDirs[i].x).normalize()
+    q.setFromUnitVectors(new THREE.Vector3(0, 1, 0), tangent)
+    m.compose(p, q, new THREE.Vector3(1, 1, 1))
+    anth.setMatrixAt(i, m)
+  })
+  anth.instanceMatrix.needsUpdate = true
+  anth.castShadow = true
+  return group([meshOf(geoms), anth], 0.78)
 }
 
 // ---------------------------------------------------------------- Orquídea
+// Orquídea Phalaenopsis: dos pétalos laterales grandes y redondeados (alas),
+// tres sépalos más estrechos detrás y un labelo pequeño con lóbulos.
 export function orchid({ hex, seed = 8 }) {
   const base = shade(hex, 0.02)
-  const tip = shade(hex, 0.08, -0.05)
+  const tip = shade(hex, 0.07, -0.05)
   const throat = shade(hex, -0.25, 0.2)
   const sepal = (i) =>
-    makePetal({ length: 0.5, width: 0.24, bend: 0.2, cup: 0.15, baseW: 0.35, mid: 0.5, tipStart: 0.6, pointy: 0.9, colorBase: base, colorTip: tip, seed: seed + i })
+    makePetal({ length: 0.52, width: 0.3, bend: 0.15, cup: 0.12, baseW: 0.3, mid: 0.55, tipStart: 0.62, pointy: 0.5, colorBase: base, colorTip: tip, nx: 8, ny: 12, seed: seed + i })
   const petal = (i) =>
-    makePetal({ length: 0.48, width: 0.42, bend: 0.25, cup: 0.12, ruffle: 0.015, baseW: 0.3, mid: 0.55, tipStart: 0.62, colorBase: base, colorTip: tip, seed: seed + 10 + i })
+    makePetal({ length: 0.5, width: 0.62, bend: 0.2, cup: 0.08, ruffle: 0.01, baseW: 0.22, mid: 0.6, tipStart: 0.5, colorBase: base, colorTip: tip, nx: 12, ny: 12, seed: seed + 10 + i })
   const geoms = [
-    ...whorl(sepal, { n: 3, r0: 0.03, y0: 0, tilt: 1.35, phase: Math.PI / 2, seed, jitter: 0.05 }),
-    ...whorl(petal, { n: 2, r0: 0.03, y0: 0.02, tilt: 1.3, phase: Math.PI / 2 + Math.PI / 3 + 0.25, seed: seed + 1, jitter: 0.05 }),
+    ...whorl(sepal, { n: 3, r0: 0.03, y0: -0.01, tilt: 1.4, phase: Math.PI / 2, seed, jitter: 0.04 }),
+    ...whorl(petal, { n: 2, r0: 0.04, y0: 0.02, tilt: 1.35, phase: Math.PI / 2 + Math.PI / 3 + 0.25, seed: seed + 1, jitter: 0.04 }),
   ]
-  // labelo: pieza pequeña con garganta oscura
   const lip = makePetal({ length: 0.3, width: 0.22, bend: 1.4, curl: 0.6, cup: -0.5, baseW: 0.5, mid: 0.5, tipStart: 0.7, colorBase: throat, colorTip: shade(hex, -0.1, 0.15), colorEdge: base, edgeAmount: 0.5, seed })
   transformed(lip, { pos: [0, 0.03, 0.05], rot: [0.5, 0, 0] })
   geoms.push(lip)
@@ -385,52 +467,45 @@ export function orchid({ hex, seed = 8 }) {
   col2.translate(0, 0.075, 0.03)
   geoms.push(paint(col2, '#f0cf5a'))
   geoms.push(calyx(0.06, 0.14, GREEN_LIGHT, -0.05))
-  return group([meshOf(geoms)], 0.5)
+  return group([meshOf(geoms)], 0.52)
 }
 
 // ---------------------------------------------------------------- Clavel
+// Clavel: pompón alto de pétalos con el borde en flecos, sobre un cáliz tubular.
 export function carnation({ hex, seed = 9 }) {
   const base = shade(hex, -0.1, 0.05)
   const tip = shade(hex, 0.06)
   const edge = shade(hex, 0.15, -0.1)
-  const geoms = []
-  const layers = [
-    { n: 6, r0: 0.01, tilt: 0.15, len: 0.24 },
-    { n: 9, r0: 0.04, tilt: 0.4, len: 0.3 },
-    { n: 12, r0: 0.08, tilt: 0.7, len: 0.34 },
-    { n: 14, r0: 0.12, tilt: 1.0, len: 0.36 },
-    { n: 15, r0: 0.15, tilt: 1.25, len: 0.34 },
-  ]
-  layers.forEach((L, li) => {
-    geoms.push(
-      ...whorl(
-        (i) =>
-          makePetal({
-            length: L.len,
-            width: 0.3,
-            bend: 0.5,
-            curl: 0.4,
-            cup: 0.35,
-            ruffle: 0.06,
-            ruffleFreq: 14,
-            baseW: 0.2,
-            mid: 0.7,
-            tipStart: 0.85,
-            colorBase: base,
-            colorTip: tip,
-            colorEdge: edge,
-            nx: 10,
-            ny: 9,
-            seed: seed * 3 + li * 11 + i,
-          }),
-        { n: L.n, r0: L.r0, y0: -li * 0.03, tilt: L.tilt, phase: li * 0.45, jitter: 0.25, seed: seed + li },
-      ),
-    )
-  })
-  const cal = new THREE.CylinderGeometry(0.12, 0.07, 0.3, 10, 1)
-  cal.translate(0, -0.22, 0)
+  const geoms = spiral(
+    (i, t) =>
+      makePetal({
+        length: 0.27 + t * 0.1,
+        width: 0.3,
+        bend: 0.3 + t * 0.35,
+        curl: 0.4,
+        cup: 0.5,
+        ruffle: 0.06,
+        ruffleFreq: 10,
+        fringe: 0.4,
+        fringeFreq: 14,
+        twist: 0.1,
+        baseW: 0.15,
+        mid: 0.7,
+        tipStart: 0.84,
+        colorBase: base,
+        colorTip: tip,
+        colorEdge: edge,
+        nx: 12,
+        ny: 10,
+        seed: seed * 3 + i,
+      }),
+    { n: 64, r0: [0.01, 0.16], y0: [0.18, -0.06], tilt: [0.05, 1.2], scale: [0.85, 1.05], seed, jitter: 0.3, ease: 0.9 },
+  )
+  const cal = new THREE.CylinderGeometry(0.1, 0.075, 0.34, 12, 1)
+  cal.translate(0, -0.24, 0)
   geoms.push(paint(cal, GREEN_LIGHT))
-  return group([meshOf(geoms)], 0.42)
+  geoms.push(...sepals({ n: 5, len: 0.12, width: 0.08, tilt: 0.5, y0: -0.08, r0: 0.09, seed }))
+  return group([meshOf(geoms)], 0.44)
 }
 
 // ---------------------------------------------------------------- Crisantemo
@@ -468,31 +543,37 @@ export function chrysanthemum({ hex, seed = 10 }) {
 }
 
 // ---------------------------------------------------------------- Lavanda
+// Lavanda: espiga fina con verticilos de florecillas pequeñas separados por
+// pequeños huecos, y capullos cerrados hacia la punta.
 export function lavender({ hex, seed = 11 }) {
   const rand = rng(seed)
   const pts = []
-  const tall = 0.75
-  for (let k = 0; k < 9; k++) {
-    const y = -0.1 + (k / 8) * tall
-    const n = 6
+  const buds = []
+  const tall = 0.8
+  const whorls = 11
+  for (let k = 0; k < whorls; k++) {
+    const y = 0.02 + (k / (whorls - 1)) * tall
+    const n = 5
+    const isBud = k >= whorls - 3
     for (let i = 0; i < n; i++) {
-      const th = (i / n) * Math.PI * 2 + k * 0.6 + rand() * 0.3
-      const r = 0.045 + rand() * 0.015
-      pts.push(new THREE.Vector3(Math.cos(th) * r, y + rand() * 0.02, Math.sin(th) * r))
+      const th = (i / n) * Math.PI * 2 + k * 0.7 + rand() * 0.4
+      const r = isBud ? 0.028 : 0.038 + rand() * 0.012
+      const p = new THREE.Vector3(Math.cos(th) * r, y + (rand() - 0.5) * 0.02, Math.sin(th) * r)
+      ;(isBud ? buds : pts).push(p)
     }
   }
-  const florets = dots(pts, 0.035, hex, { widthSeg: 6, heightSeg: 5 })
-  florets.geometry.scale(1, 1.7, 0.9)
-  const tipC = shade(hex, 0.12, -0.05)
-  const tipDots = dots([new THREE.Vector3(0, tall - 0.06, 0)], 0.04, tipC)
-  const stem = new THREE.CylinderGeometry(0.014, 0.018, tall + 0.2, 6, 1)
-  stem.translate(0, tall / 2 - 0.15, 0)
+  const florets = dots(pts, 0.024, hex, { widthSeg: 6, heightSeg: 5, scaleFn: (i) => 0.85 + ((i * 31) % 10) / 33 })
+  florets.geometry.scale(1, 1.9, 0.9)
+  const budDots = dots(buds, 0.018, shade(hex, -0.08, 0.05), { widthSeg: 5, heightSeg: 4 })
+  budDots.geometry.scale(1, 1.8, 1)
+  const stem = new THREE.CylinderGeometry(0.01, 0.014, tall + 0.3, 6, 1)
+  stem.translate(0, tall / 2 - 0.1, 0)
   paint(stem, '#7f9a6f')
   const leaves = whorl(
-    (i) => makePetal({ length: 0.22, width: 0.04, bend: 0.5, cup: 0.3, pointy: 1, tipStart: 0.5, colorBase: '#8fa88a', colorTip: '#a8bca0', nx: 3, ny: 5, seed: seed + i }),
-    { n: 4, r0: 0.02, y0: -0.2, tilt: 0.9, seed },
+    (i) => makePetal({ length: 0.26, width: 0.035, bend: 0.5, cup: 0.3, pointy: 1, tipStart: 0.5, colorBase: '#8fa88a', colorTip: '#a8bca0', nx: 3, ny: 6, seed: seed + i }),
+    { n: 4, r0: 0.02, y0: -0.25, tilt: 0.7, seed },
   )
-  return group([meshOf([stem, ...leaves]), florets, tipDots], 0.2, { spike: true })
+  return group([meshOf([stem, ...leaves]), florets, budDots], 0.2, { spike: true })
 }
 
 // ---------------------------------------------------------------- Hortensia
@@ -552,37 +633,42 @@ function floretsMaterial() {
 }
 
 // ---------------------------------------------------------------- Paniculata
+// Paniculata: nube de florecillas diminutas sobre ramificación muy fina.
 export function gypsophila({ hex, seed = 13 }) {
   const rand = rng(seed)
   const geoms = []
   const pts = []
-  const branches = 7
+  const branches = 11
   for (let b = 0; b < branches; b++) {
     const th = (b / branches) * Math.PI * 2 + rand() * 0.5
-    const lean = 0.35 + rand() * 0.4
-    const len = 0.45 + rand() * 0.35
+    const lean = 0.3 + rand() * 0.5
+    const len = 0.5 + rand() * 0.4
     const end = new THREE.Vector3(Math.cos(th) * lean * len, len * 0.85, Math.sin(th) * lean * len)
     const start = new THREE.Vector3(0, -0.3, 0)
     const dir = end.clone().sub(start)
-    const stem = new THREE.CylinderGeometry(0.005, 0.009, dir.length(), 4, 1)
+    const stem = new THREE.CylinderGeometry(0.004, 0.007, dir.length(), 4, 1)
     stem.translate(0, dir.length() / 2, 0)
     stem.applyQuaternion(new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir.clone().normalize()))
     stem.translate(start.x, start.y, start.z)
     geoms.push(paint(stem, '#8da57c'))
-    // ramillete en la punta
-    const n = 10 + Math.floor(rand() * 8)
-    for (let i = 0; i < n; i++) {
-      const off = new THREE.Vector3(rand() - 0.5, rand() - 0.5, rand() - 0.5).multiplyScalar(0.3)
-      const p = end.clone().add(off)
-      pts.push(p)
-      const twig = new THREE.CylinderGeometry(0.003, 0.003, off.length(), 3, 1)
+    // ramillete: sub-ramas cortas, cada una con varias florecillas
+    const sub = 4 + Math.floor(rand() * 3)
+    for (let j = 0; j < sub; j++) {
+      const off = new THREE.Vector3(rand() - 0.5, rand() - 0.3, rand() - 0.5).multiplyScalar(0.34)
+      const mid = end.clone().add(off)
+      const twig = new THREE.CylinderGeometry(0.0025, 0.003, off.length(), 3, 1)
       twig.translate(0, off.length() / 2, 0)
       twig.applyQuaternion(new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), off.clone().normalize()))
       twig.translate(end.x, end.y, end.z)
       geoms.push(paint(twig, '#9fb58e'))
+      const n = 4 + Math.floor(rand() * 4)
+      for (let i = 0; i < n; i++) {
+        const o2 = new THREE.Vector3(rand() - 0.5, rand() - 0.5, rand() - 0.5).multiplyScalar(0.12)
+        pts.push(mid.clone().add(o2))
+      }
     }
   }
-  const flowers = dots(pts, 0.03, hex, { widthSeg: 6, heightSeg: 5, scaleFn: (i) => 0.7 + ((i * 37) % 10) / 20 })
+  const flowers = dots(pts, 0.02, hex, { widthSeg: 6, heightSeg: 5, scaleFn: (i) => 0.7 + ((i * 37) % 10) / 20 })
   return group([meshOf(geoms), flowers], 0.55, { filler: true })
 }
 

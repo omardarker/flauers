@@ -3,6 +3,7 @@ import { useHashRoute } from './lib/router.js'
 import { Home } from './pages/Home.jsx'
 import { Builder } from './pages/Builder.jsx'
 import { Gift } from './pages/Gift.jsx'
+import { Lab } from './pages/Lab.jsx'
 
 const STORAGE_KEY = 'flauers:selection'
 
@@ -45,6 +46,7 @@ export default function App() {
 
   let page
   if (route.page === 'gift') page = <Gift code={route.code} id={route.id} />
+  else if (route.page === 'lab') page = <Lab />
   else if (route.page === 'builder') page = <Builder code={route.code} gift={route.gift} selection={selection} setSelection={setSelection} />
   else page = <Home selection={selection} setSelection={setSelection} toast={toast} />
 

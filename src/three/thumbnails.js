@@ -75,12 +75,16 @@ function enqueue(key, run) {
   return p
 }
 
-export function flowerThumbnail(flower, color, size = 420) {
-  const key = `f:${flower.id}:${color.id}:${size}`
+export function flowerThumbnail(flower, color, size = 420, view = 'auto') {
+  const key = `f:${flower.id}:${color.id}:${size}:${view}`
   return enqueue(key, () => {
     const head = buildFlower(flower.model, { hex: color.hex, seed: 7 })
     const r = head.userData.radius || 0.5
     const spike = head.userData.spike
+    if (view === 'side') {
+      head.rotation.x = 0
+      return renderObject(head, size, { distance: spike ? 3.6 : 2.4 + r * 3.2, target: [0, spike ? 0.3 : 0.05, 0], elevation: 0.12, azimuth: 0.4 })
+    }
     head.rotation.x = spike ? 0.15 : 0.35
     const dist = spike ? 3.6 : 2.2 + r * 3.4
     return renderObject(head, size, { distance: dist, target: [0, spike ? 0.3 : 0.02, 0], elevation: spike ? 0.35 : 0.85, azimuth: 0.3 })
@@ -91,7 +95,7 @@ export function bouquetThumbnail(bouquet, key, size = 560) {
   return enqueue(`b:${key}:${size}`, () => {
     const g = buildBouquet(bouquet)
     const r = g.userData.radius || 1.5
-    return renderObject(g, size, { distance: 5.6 + r * 1.8, target: [0, -1.05, 0], elevation: 0.28, azimuth: 0.15 })
+    return renderObject(g, size, { distance: 5.4 + r * 1.8, target: [0, -0.95, 0], elevation: 0.5, azimuth: 0.15 })
   })
 }
 

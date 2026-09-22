@@ -92,8 +92,10 @@ export function makePetal(opts = {}) {
     mid = 0.5,
     tipStart = 0.7,
     pointy = 0,
-    nx = 8,
-    ny = 12,
+    fringe = 0, // flecos en el borde de la punta (clavel)
+    fringeFreq = 14,
+    nx = 10,
+    ny = 14,
     colorBase = '#ffffff',
     colorTip = colorBase,
     colorEdge = null,
@@ -126,12 +128,17 @@ export function makePetal(opts = {}) {
       py += Math.cos(a) * length * dt
       pz += Math.sin(a) * length * dt
     }
-    const hw = (width / 2) * widthProfile(t, profileOpts)
+    const hw0 = (width / 2) * widthProfile(t, profileOpts)
     const tw = twist * t
     for (let i = 0; i <= nx; i++) {
       const u = (i / nx) * 2 - 1
+      let hw = hw0
+      if (fringe && t > 0.75) {
+        const f = (t - 0.75) / 0.25
+        hw *= 1 - fringe * f * (0.5 + 0.5 * Math.sin(u * fringeFreq + rufflePhase))
+      }
       let x = u * hw
-      const cupZ = -cup * u * u * hw
+      const cupZ = -cup * u * u * hw0
       const rz =
         ruffle *
         Math.sin(u * ruffleFreq + t * ruffleFreq * 1.7 + rufflePhase) *
@@ -223,6 +230,40 @@ export function whorl(makeGeom, opts = {}) {
   return out
 }
 
+const lerp = (a, b, t) => a + (b - a) * t
+
+/**
+ * Coloca pétalos en espiral (ángulo áureo), como crecen en una rosa o una
+ * peonía. Cada parámetro puede ser un número o un par [inicio, fin] que se
+ * interpola desde el centro hacia fuera.
+ */
+export function spiral(makeGeom, opts = {}) {
+  const { n = 30, seed = 1, jitter = 0.1, ease = 1 } = opts
+  const rand = rng(seed)
+  const val = (v, t) => (Array.isArray(v) ? lerp(v[0], v[1], t) : v)
+  const golden = Math.PI * (3 - Math.sqrt(5))
+  const out = []
+  for (let i = 0; i < n; i++) {
+    const t = Math.pow(n > 1 ? i / (n - 1) : 0, ease)
+    const theta = i * golden + (rand() - 0.5) * jitter
+    const r0 = val(opts.r0 ?? 0.1, t)
+    const y0 = val(opts.y0 ?? 0, t)
+    const tilt = val(opts.tilt ?? 0.5, t) + (rand() - 0.5) * jitter
+    const sc = val(opts.scale ?? 1, t) * (1 + (rand() - 0.5) * jitter)
+    const g = makeGeom(i, t, rand)
+    _e.set(tilt, 0, 0)
+    _q.setFromEuler(_e)
+    _p.set(0, y0, r0)
+    _s.set(sc, sc, sc)
+    _m.compose(_p, _q, _s)
+    const rot = new THREE.Matrix4().makeRotationY(theta)
+    rot.multiply(_m)
+    g.applyMatrix4(rot)
+    out.push(g)
+  }
+  return out
+}
+
 export function transformed(geom, { pos = [0, 0, 0], rot = [0, 0, 0], scale = 1 } = {}) {
   _e.set(rot[0], rot[1], rot[2])
   _q.setFromEuler(_e)
@@ -241,7 +282,7 @@ export function petalMaterial() {
     _petalMaterial = new THREE.MeshStandardMaterial({
       vertexColors: true,
       side: THREE.DoubleSide,
-      roughness: 0.72,
+      roughness: 0.78,
       metalness: 0,
     })
   }

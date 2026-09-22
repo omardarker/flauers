@@ -1,16 +1,16 @@
 import { useEffect, useState } from 'react'
 import { flowerThumbnail, bouquetThumbnail } from '../three/thumbnails.js'
 
-export function useFlowerThumbnail(flower, color, size) {
+export function useFlowerThumbnail(flower, color, size, view) {
   const [url, setUrl] = useState(null)
   useEffect(() => {
     let alive = true
     setUrl(null)
-    flowerThumbnail(flower, color, size).then((u) => alive && setUrl(u)).catch(() => {})
+    flowerThumbnail(flower, color, size, view).then((u) => alive && setUrl(u)).catch(() => {})
     return () => {
       alive = false
     }
-  }, [flower, color, size])
+  }, [flower, color, size, view])
   return url
 }
 
