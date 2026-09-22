@@ -1,11 +1,5 @@
 {
   "rewrites": [
-    { "source": "/r/:id", "destination": "/index.html" }
-  ],
-  "headers": [
-    {
-      "source": "/r/:id",
-      "headers": [{ "key": "Cache-Control", "value": "public, max-age=0, must-revalidate" }]
-    }
+    { "source": "/r/:id", "destination": "/api/gift?id=:id" }
   ]
 }
