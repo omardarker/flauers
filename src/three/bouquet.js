@@ -216,16 +216,52 @@ export function buildBouquet(bouquet, opts = {}) {
     root.userData.flowers.push(fg)
   })
 
+  root.userData.seed = seed
   if (opts.wrap !== false) {
-    const wrap = WRAPS.find((w) => w.id === bouquet.wrap) || WRAPS[0]
-    const ribbon = RIBBONS.find((r) => r.id === bouquet.ribbon) || RIBBONS[0]
-    const paper = makeWrap(R + avgR * 0.55, wrap.hex, seed)
-    root.add(paper)
-    root.add(makeRibbon(ribbon.hex, seed, paper.userData.radiusAtBind))
+    const wrapGroup = buildWrapGroup(bouquet, R, avgR, seed)
+    root.add(wrapGroup)
+    root.userData.wrapGroup = wrapGroup
   }
 
   root.userData.radius = R + avgR
   return root
+}
+
+// Apertura del papel: 0 = cerrado, 100 = muy abierto. Sin valor → automático.
+const WRAP_MIN = 0.7
+const WRAP_SPAN = 1.9
+
+export function wrapRadiusFor(open, R, avgR) {
+  if (open === undefined || open === null || !Number.isFinite(open)) return R + avgR * 0.55
+  return WRAP_MIN + (THREE.MathUtils.clamp(open, 0, 100) / 100) * WRAP_SPAN
+}
+
+/** Valor del deslizador equivalente al tamaño automático del papel. */
+export function autoWrapOpenFor(bouquet) {
+  const { R, avgR } = layoutBouquet(bouquet)
+  return Math.round(THREE.MathUtils.clamp(((R + avgR * 0.55 - WRAP_MIN) / WRAP_SPAN) * 100, 0, 100))
+}
+
+export function buildWrapGroup(bouquet, R, avgR, seed) {
+  const wrap = WRAPS.find((w) => w.id === bouquet.wrap) || WRAPS[0]
+  const ribbon = RIBBONS.find((r) => r.id === bouquet.ribbon) || RIBBONS[0]
+  const g = new THREE.Group()
+  const paper = makeWrap(wrapRadiusFor(bouquet.wrapOpen, R, avgR), wrap.hex, seed)
+  g.add(paper)
+  g.add(makeRibbon(ribbon.hex, seed, paper.userData.radiusAtBind))
+  return g
+}
+
+/** Reemplaza solo el papel y el lazo de un ramo ya construido. */
+export function updateWrap(root, bouquet) {
+  const old = root.userData.wrapGroup
+  if (old) {
+    root.remove(old)
+    disposeGroup(old)
+  }
+  const g = buildWrapGroup(bouquet, root.userData.R, root.userData.avgR, root.userData.seed)
+  root.add(g)
+  root.userData.wrapGroup = g
 }
 
 /** Coloca una flor (cabeza orientada desde el foco) y regenera su tallo. */

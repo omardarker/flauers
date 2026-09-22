@@ -25,16 +25,27 @@ export function BouquetViewer({ bouquet, className, onReady, targetY, editable =
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  const key = JSON.stringify([bouquet.items, bouquet.wrap, bouquet.ribbon, bouquet.layout || null])
+  const bouquetRef = useRef(bouquet)
+  bouquetRef.current = bouquet
+
+  // flores y disposición: reconstrucción completa (con pequeño debounce)
+  const key = JSON.stringify([bouquet.items, bouquet.layout || null])
   useEffect(() => {
     const t = setTimeout(() => {
       const stage = stageRef.current
+      const b = bouquetRef.current
       if (!stage) return
-      stage.setBouquet(bouquet.items.length ? buildBouquet(bouquet) : null)
+      stage.setBouquet(b.items.length ? buildBouquet(b) : null)
     }, 120)
     return () => clearTimeout(t)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [key])
+
+  // papel, lazo y apertura: solo se redibuja la envoltura
+  useEffect(() => {
+    stageRef.current?.updateWrap(bouquetRef.current)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [bouquet.wrap, bouquet.ribbon, bouquet.wrapOpen])
 
   return <canvas ref={canvasRef} className={className} aria-label={editable ? "Ramo en 3D. Arrastra una flor para moverla o el fondo para girar." : "Ramo en 3D. Arrastra para girar."} />
 }

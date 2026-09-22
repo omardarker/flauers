@@ -4,7 +4,7 @@
 import * as THREE from 'three'
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js'
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js'
-import { disposeGroup, placeFlower, domeY } from './bouquet.js'
+import { disposeGroup, placeFlower, domeY, updateWrap } from './bouquet.js'
 
 let _envCache = null
 export function environmentFor(renderer) {
@@ -127,6 +127,12 @@ export class BouquetStage {
       this.camera.position.copy(this.controls.target).add(dir.multiplyScalar(dist))
       this.controls.target.set(0, this.targetY + Math.min(r, 2) * 0.1, 0)
     }
+  }
+
+  /** Cambia papel, lazo o apertura sin reconstruir las flores. */
+  updateWrap(bouquet) {
+    if (!this.group || !this.group.userData.wrapGroup) return
+    updateWrap(this.group, bouquet)
   }
 
   // ----- Arrastre de flores -----------------------------------------------
