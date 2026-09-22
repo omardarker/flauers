@@ -59,6 +59,7 @@ function sanitize(c) {
     m: str(c.m, 240),
     l: layout && layout.length ? layout : undefined,
     o: typeof c.o === 'number' && Number.isFinite(c.o) ? Math.max(0, Math.min(100, Math.round(c.o))) : undefined,
+    h: typeof c.h === 'number' && Number.isFinite(c.h) ? Math.max(0, Math.min(100, Math.round(c.h))) : undefined,
   }
 }
 

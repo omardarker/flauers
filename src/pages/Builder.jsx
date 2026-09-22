@@ -3,7 +3,7 @@ import { FLOWERS, FLOWER_BY_ID, findColor } from '../data/flowers.js'
 import { WRAPS, RIBBONS } from '../data/bouquets.js'
 import { decodeBouquet, builderUrl } from '../lib/share.js'
 import { BouquetViewer } from '../components/BouquetViewer.jsx'
-import { autoWrapOpenFor } from '../three/bouquet.js'
+import { autoWrapOpenFor, AUTO_WRAP_HEIGHT } from '../three/bouquet.js'
 import { FlowerImage } from '../components/FlowerImage.jsx'
 import { ShareModal } from '../components/ShareModal.jsx'
 import { Header } from '../components/Header.jsx'
@@ -39,6 +39,7 @@ export function Builder({ code, gift = false, selection, setSelection }) {
   const stems = bouquet.items.reduce((s, i) => s + i.qty, 0)
   const autoOpen = useMemo(() => (bouquet.items.length ? autoWrapOpenFor(bouquet) : 50), [bouquet.items, bouquet.layout])
   const wrapOpen = Number.isFinite(bouquet.wrapOpen) ? bouquet.wrapOpen : autoOpen
+  const wrapHeight = Number.isFinite(bouquet.wrapHeight) ? bouquet.wrapHeight : AUTO_WRAP_HEIGHT
   const layout = bouquet.layout || {}
   const hasLayout = Object.keys(layout).length > 0
   const update = (patch) => setBouquet((b) => ({ ...b, ...patch }))
@@ -186,27 +187,33 @@ export function Builder({ code, gift = false, selection, setSelection }) {
 
           <div className="panel__section">
             <h3>
-              Apertura del papel
-              <small>{Number.isFinite(bouquet.wrapOpen) ? `${wrapOpen}` : `automática · ${autoOpen}`}</small>
+              Forma del papel
+              <small>
+                {Number.isFinite(bouquet.wrapOpen) || Number.isFinite(bouquet.wrapHeight) ? (
+                  <button className="link-btn link-btn--inline" onClick={() => update({ wrapOpen: undefined, wrapHeight: undefined })}>
+                    volver a automático
+                  </button>
+                ) : (
+                  'automática'
+                )}
+              </small>
             </h3>
+            <div className="range__label">
+              Apertura <span>{wrapOpen}</span>
+            </div>
             <div className="range">
               <span className="range__end">Cerrado</span>
-              <input
-                type="range"
-                min={0}
-                max={100}
-                step={1}
-                value={wrapOpen}
-                aria-label="Apertura del papel"
-                onChange={(e) => update({ wrapOpen: Number(e.target.value) })}
-              />
+              <input type="range" min={0} max={100} step={1} value={wrapOpen} aria-label="Apertura del papel" onChange={(e) => update({ wrapOpen: Number(e.target.value) })} />
               <span className="range__end">Abierto</span>
             </div>
-            {Number.isFinite(bouquet.wrapOpen) && (
-              <button className="link-btn" onClick={() => update({ wrapOpen: undefined })}>
-                Volver a automático
-              </button>
-            )}
+            <div className="range__label">
+              Altura <span>{wrapHeight}</span>
+            </div>
+            <div className="range">
+              <span className="range__end">Bajo</span>
+              <input type="range" min={0} max={100} step={1} value={wrapHeight} aria-label="Altura del papel" onChange={(e) => update({ wrapHeight: Number(e.target.value) })} />
+              <span className="range__end">Alto</span>
+            </div>
           </div>
 
           <div className="panel__section">

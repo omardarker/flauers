@@ -45,7 +45,7 @@ export function BouquetViewer({ bouquet, className, onReady, targetY, editable =
   useEffect(() => {
     stageRef.current?.updateWrap(bouquetRef.current)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [bouquet.wrap, bouquet.ribbon, bouquet.wrapOpen])
+  }, [bouquet.wrap, bouquet.ribbon, bouquet.wrapOpen, bouquet.wrapHeight])
 
   return <canvas ref={canvasRef} className={className} aria-label={editable ? "Ramo en 3D. Arrastra una flor para moverla o el fondo para girar." : "Ramo en 3D. Arrastra para girar."} />
 }

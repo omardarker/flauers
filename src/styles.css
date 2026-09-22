@@ -332,3 +332,7 @@ img { display: block; max-width: 100%; }
 .range { display: flex; align-items: center; gap: 10px; }
 .range input[type=range] { flex: 1; accent-color: var(--moss); height: 28px; cursor: pointer; }
 .range__end { font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-soft); white-space: nowrap; }
+
+.range__label { display: flex; justify-content: space-between; font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--moss); font-weight: 700; margin: 8px 0 2px; }
+.range__label span { color: var(--ink-soft); font-weight: 400; letter-spacing: 0; text-transform: none; }
+.link-btn--inline { margin-top: 0; font-size: 12px; }

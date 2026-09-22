@@ -231,6 +231,18 @@ export function buildBouquet(bouquet, opts = {}) {
 const WRAP_MIN = 0.7
 const WRAP_SPAN = 1.9
 
+// Altura del borde del papel: 0 = bajo, 100 = alto (cubre las flores).
+const WRAP_Y_MIN = -1.2
+const WRAP_Y_SPAN = 2.0
+const WRAP_Y_AUTO = -0.7
+
+export function wrapTopFor(height) {
+  if (height === undefined || height === null || !Number.isFinite(height)) return WRAP_Y_AUTO
+  return WRAP_Y_MIN + (THREE.MathUtils.clamp(height, 0, 100) / 100) * WRAP_Y_SPAN
+}
+
+export const AUTO_WRAP_HEIGHT = Math.round(((WRAP_Y_AUTO - WRAP_Y_MIN) / WRAP_Y_SPAN) * 100)
+
 export function wrapRadiusFor(open, R, avgR) {
   if (open === undefined || open === null || !Number.isFinite(open)) return R + avgR * 0.55
   return WRAP_MIN + (THREE.MathUtils.clamp(open, 0, 100) / 100) * WRAP_SPAN
@@ -246,7 +258,7 @@ export function buildWrapGroup(bouquet, R, avgR, seed) {
   const wrap = WRAPS.find((w) => w.id === bouquet.wrap) || WRAPS[0]
   const ribbon = RIBBONS.find((r) => r.id === bouquet.ribbon) || RIBBONS[0]
   const g = new THREE.Group()
-  const paper = makeWrap(wrapRadiusFor(bouquet.wrapOpen, R, avgR), wrap.hex, seed)
+  const paper = makeWrap(wrapRadiusFor(bouquet.wrapOpen, R, avgR), wrap.hex, seed, wrapTopFor(bouquet.wrapHeight))
   g.add(paper)
   g.add(makeRibbon(ribbon.hex, seed, paper.userData.radiusAtBind))
   return g
@@ -316,14 +328,14 @@ function stemGeometry(head, up, p) {
 
 // Papel de envolver: superficie paramétrica en forma de cono abierto con
 // bordes irregulares, como papel doblado a mano.
-function makeWrap(topRadius, hex, seed) {
+function makeWrap(topRadius, hex, seed, topY = -0.7) {
   const rand = rng(seed + 77)
   const phase1 = rand() * Math.PI * 2
   const phase2 = rand() * Math.PI * 2
   const nu = 96
   const nv = 14
   const y0 = BIND_Y - 0.25
-  const y1 = -0.7
+  const y1 = topY
   const r0 = 0.3
   const build = (rMul, yMul, colorHex, seedOff) => {
     const positions = []
@@ -339,7 +351,7 @@ function makeWrap(topRadius, hex, seed) {
         const rr = (r0 + (topRadius * rMul - r0) * flare) * (v > 0.05 ? edge : 1)
         // más alto por detrás (z negativo) y con borde irregular
         const topWave = 0.55 * -Math.sin(th) + 0.12 * Math.sin(3 * th + phase1) + 0.08 * Math.sin(7 * th + phase2)
-        const yy = y0 + (y1 * yMul + topWave - y0) * v
+        const yy = y0 + (y1 + yMul + topWave - y0) * v
         positions.push(Math.cos(th) * rr, yy, Math.sin(th) * rr)
         uvs.push(u, v)
       }
@@ -363,8 +375,8 @@ function makeWrap(topRadius, hex, seed) {
     return mesh
   }
   const g = new THREE.Group()
-  g.add(build(1.0, 1.0, hex, 0))
-  g.add(build(0.88, 1.12, shade(hex, 0.12, -0.05).getStyle(), 2.1))
+  g.add(build(1.0, 0, hex, 0))
+  g.add(build(0.88, -0.1, shade(hex, 0.12, -0.05).getStyle(), 2.1))
   // radio del papel a la altura del lazo, para que el lazo quede por fuera
   const vBind = (BIND_Y - y0) / (y1 - y0)
   g.userData.radiusAtBind = (r0 + (topRadius - r0) * Math.pow(vBind, 1.15)) * 1.05

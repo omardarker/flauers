@@ -27,6 +27,7 @@ export function compactBouquet(bouquet) {
     m: bouquet.message || undefined,
     l: encodeLayout(bouquet.layout),
     o: Number.isFinite(bouquet.wrapOpen) ? Math.round(bouquet.wrapOpen) : undefined,
+    h: Number.isFinite(bouquet.wrapHeight) ? Math.round(bouquet.wrapHeight) : undefined,
   }
 }
 
@@ -45,6 +46,7 @@ export function expandCompact(c) {
     message: c.m || '',
     layout: decodeLayout(c.l),
     wrapOpen: typeof c.o === 'number' && Number.isFinite(c.o) ? Math.max(0, Math.min(100, Math.round(c.o))) : undefined,
+    wrapHeight: typeof c.h === 'number' && Number.isFinite(c.h) ? Math.max(0, Math.min(100, Math.round(c.h))) : undefined,
   }
 }
 
