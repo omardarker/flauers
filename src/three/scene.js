@@ -4,7 +4,7 @@
 import * as THREE from 'three'
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js'
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js'
-import { disposeGroup, placeFlower, domeY, updateWrap } from './bouquet.js'
+import { disposeGroup, placeFlower, domeY, relayoutBouquet, headLimit } from './bouquet.js'
 
 let _envCache = null
 export function environmentFor(renderer) {
@@ -129,10 +129,10 @@ export class BouquetStage {
     }
   }
 
-  /** Cambia papel, lazo o apertura sin reconstruir las flores. */
+  /** Cambia papel, lazo, apertura o altura sin reconstruir los modelos. */
   updateWrap(bouquet) {
     if (!this.group || !this.group.userData.wrapGroup) return
-    updateWrap(this.group, bouquet)
+    relayoutBouquet(this.group, bouquet)
   }
 
   // ----- Arrastre de flores -----------------------------------------------
@@ -219,7 +219,8 @@ export class BouquetStage {
       pos.y = THREE.MathUtils.clamp(hit.y, -1.4, 1.8)
       fg.userData.lift = pos.y - domeY(Math.hypot(pos.x, pos.z), R, def)
     } else {
-      const maxR = Math.max(R, 1) + 0.9
+      const bound = this.group.userData.bound
+      const maxR = bound ? headLimit(bound, fg.userData.radius) : Math.max(R, 1) + 0.9
       let r = Math.hypot(hit.x, hit.z)
       let x = hit.x
       let z = hit.z

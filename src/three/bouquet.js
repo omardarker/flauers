@@ -117,18 +117,35 @@ export function layoutBouquet(bouquet) {
     }
   })
 
-  relax(slots, rand)
+  // con apertura manual del papel, las cabezas no pueden salirse de él
+  const bound = Number.isFinite(bouquet.wrapOpen) ? wrapRadiusFor(bouquet.wrapOpen, 0, 0) : null
+  relax(slots, rand, bound)
 
   const R = Math.max(0.5, ...slots.map((s) => Math.hypot(s.x, s.z)))
   slots.forEach((s) => {
     if (!s.fixed) s.y = domeY(Math.hypot(s.x, s.z), R, s.f.def)
   })
-  return { slots, R, avgR, seed }
+  return { slots, R, avgR, seed, bound }
+}
+
+/** Radio máximo al que puede llegar el centro de una cabeza dentro del papel. */
+export function headLimit(bound, headRadius) {
+  return Math.max(0.05, bound - headRadius * 0.55)
+}
+
+function clampToBound(s, bound) {
+  const maxR = headLimit(bound, s.radius)
+  const r = Math.hypot(s.x, s.z)
+  if (r > maxR) {
+    s.x *= maxR / r
+    s.z *= maxR / r
+  }
 }
 
 // Separa las cabezas que se solapan (solo mueve las que no fijó el usuario).
-function relax(slots, rand) {
+function relax(slots, rand, bound = null) {
   const n = slots.length
+  if (bound !== null) slots.forEach((s) => clampToBound(s, bound))
   for (let it = 0; it < 60; it++) {
     for (let i = 0; i < n; i++) {
       for (let j = i + 1; j < n; j++) {
@@ -170,6 +187,7 @@ function relax(slots, rand) {
         s.x *= 0.995
         s.z *= 0.995
       }
+      if (bound !== null) clampToBound(s, bound)
     }
   }
 }
@@ -180,8 +198,8 @@ function relax(slots, rand) {
  */
 export function buildBouquet(bouquet, opts = {}) {
   const root = new THREE.Group()
-  const { slots, R, avgR, seed } = layoutBouquet(bouquet)
-  root.userData = { radius: 1, R, avgR, flowers: [] }
+  const { slots, R, avgR, seed, bound } = layoutBouquet(bouquet)
+  root.userData = { radius: 1, R, avgR, bound, flowers: [] }
   if (slots.length === 0) return root
 
   const rand = rng(seed + 5)
@@ -262,6 +280,24 @@ export function buildWrapGroup(bouquet, R, avgR, seed) {
   g.add(paper)
   g.add(makeRibbon(ribbon.hex, seed, paper.userData.radiusAtBind))
   return g
+}
+
+/**
+ * Reacomoda las cabezas de un ramo ya construido (sin regenerar modelos)
+ * y redibuja el papel. Se usa al mover las barras de apertura y altura.
+ */
+export function relayoutBouquet(root, bouquet) {
+  const { slots, R, avgR, bound } = layoutBouquet(bouquet)
+  const byKey = new Map(slots.map((s) => [s.key, s]))
+  root.userData.flowers.forEach((fg) => {
+    const s = byKey.get(fg.userData.key)
+    if (s) placeFlower(fg, new THREE.Vector3(s.x, s.y, s.z))
+  })
+  root.userData.R = R
+  root.userData.avgR = avgR
+  root.userData.bound = bound
+  root.userData.radius = R + avgR
+  updateWrap(root, bouquet)
 }
 
 /** Reemplaza solo el papel y el lazo de un ramo ya construido. */
