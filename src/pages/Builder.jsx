@@ -8,7 +8,7 @@ import { FlowerImage } from '../components/FlowerImage.jsx'
 import { ShareModal } from '../components/ShareModal.jsx'
 import { Header } from '../components/Header.jsx'
 
-const EMPTY = { items: [], wrap: 'kraft', ribbon: 'lino', to: '', from: '', message: '', layout: {} }
+const EMPTY = { items: [], wrap: 'kraft', ribbon: 'lino', to: '', from: '', message: '', layout: {}, tweaks: {} }
 const MAX_STEMS = 40
 
 export function Builder({ code, gift = false, selection, setSelection }) {
@@ -42,26 +42,49 @@ export function Builder({ code, gift = false, selection, setSelection }) {
   const wrapOpen = Number.isFinite(bouquet.wrapOpen) ? bouquet.wrapOpen : autoOpen
   const wrapHeight = Number.isFinite(bouquet.wrapHeight) ? bouquet.wrapHeight : AUTO_WRAP_HEIGHT
   const layout = bouquet.layout || {}
+  const tweaks = bouquet.tweaks || {}
   const hasLayout = Object.keys(layout).length > 0
   const update = (patch) => setBouquet((b) => ({ ...b, ...patch }))
-  // descarta posiciones fijadas de tallos que ya no existen
-  const pruneLayout = (items) => {
+  // descarta datos de tallos que ya no existen
+  const pruneMap = (map, items) => {
     const out = {}
-    Object.entries(layout).forEach(([key, pos]) => {
+    Object.entries(map).forEach(([key, val]) => {
       const [flower, idx] = key.split(':')
       const it = items.find((i) => i.flower === flower)
-      if (it && Number(idx) < it.qty) out[key] = pos
+      if (it && Number(idx) < it.qty) out[key] = val
     })
     return out
   }
   const updateItem = (flowerId, patch) => {
     const items = bouquet.items.map((it) => (it.flower === flowerId ? { ...it, ...patch } : it))
-    update({ items, layout: pruneLayout(items) })
+    update({ items, layout: pruneMap(layout, items), tweaks: pruneMap(tweaks, items) })
   }
   const removeItem = (flowerId) => {
     const items = bouquet.items.filter((it) => it.flower !== flowerId)
-    update({ items, layout: pruneLayout(items) })
+    update({ items, layout: pruneMap(layout, items), tweaks: pruneMap(tweaks, items) })
   }
+  // elimina un solo tallo (los siguientes de esa flor se renumeran)
+  const removeStem = (key) => {
+    const [flower, idxStr] = key.split(':')
+    const idx = Number(idxStr)
+    const it = bouquet.items.find((i) => i.flower === flower)
+    if (!it) return
+    const reindex = (map) => {
+      const out = {}
+      Object.entries(map).forEach(([k, val]) => {
+        const [f, i] = k.split(':')
+        const n = Number(i)
+        if (f !== flower) out[k] = val
+        else if (n < idx) out[k] = val
+        else if (n > idx) out[`${f}:${n - 1}`] = val
+      })
+      return out
+    }
+    const items = it.qty <= 1 ? bouquet.items.filter((i) => i.flower !== flower) : bouquet.items.map((i) => (i.flower === flower ? { ...i, qty: i.qty - 1 } : i))
+    update({ items, layout: reindex(layout), tweaks: reindex(tweaks) })
+    stageRef.current?.select(null)
+  }
+  const setTweak = (key, patch) => update({ tweaks: { ...tweaks, [key]: { ...(tweaks[key] || {}), ...patch } } })
   const moveFlower = (key, pos) => setBouquet((b) => ({ ...b, layout: { ...(b.layout || {}), [key]: pos } }))
   const addFlower = (f) => {
     if (bouquet.items.some((it) => it.flower === f.id)) return
@@ -99,8 +122,13 @@ export function Builder({ code, gift = false, selection, setSelection }) {
             <div className="flower-tool">
               <div className="flower-tool__head">
                 <strong>{selected.name}</strong>
-                <button className="flower-tool__close" onClick={() => stageRef.current?.select(null)} aria-label="Cerrar">
-                  ×
+                <button className="flower-tool__delete" onClick={() => removeStem(selected.key)} aria-label={`Quitar esta ${selected.name} del ramo`} title="Quitar esta flor del ramo">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <path d="M3 6h18" />
+                    <path d="M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2" />
+                    <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+                    <path d="M10 11v6M14 11v6" />
+                  </svg>
                 </button>
               </div>
               <div className="range__label">
@@ -123,7 +151,27 @@ export function Builder({ code, gift = false, selection, setSelection }) {
                 />
                 <span className="range__end">Arriba</span>
               </div>
-              <div className="flower-tool__hint">Arrástrala en el ramo para cambiarla de sitio.</div>
+              {selected.model === 'gypsophila' && (
+                <>
+                  <div className="range__label">
+                    Apertura <span>{Math.round((tweaks[selected.key]?.spread ?? 0.5) * 100)}</span>
+                  </div>
+                  <div className="range">
+                    <span className="range__end">Cerrada</span>
+                    <input
+                      type="range"
+                      min={0}
+                      max={100}
+                      step={1}
+                      value={Math.round((tweaks[selected.key]?.spread ?? 0.5) * 100)}
+                      aria-label="Apertura de la paniculata"
+                      onChange={(e) => setTweak(selected.key, { spread: Number(e.target.value) / 100 })}
+                    />
+                    <span className="range__end">Abierta</span>
+                  </div>
+                </>
+              )}
+              <div className="flower-tool__hint">Arrástrala en el ramo para cambiarla de sitio. Toca el fondo para cerrar.</div>
               {layout[selected.key] && (
                 <button
                   className="link-btn"

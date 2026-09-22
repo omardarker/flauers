@@ -234,7 +234,8 @@ export function buildBouquet(bouquet, opts = {}) {
   const rand = rng(seed + 5)
   slots.forEach((s) => {
     const fg = new THREE.Group()
-    const head = buildFlower(s.f.def.model, { hex: s.f.color.hex, seed: seed + s.k * 101 + s.f.index })
+    const tweak = (bouquet.tweaks || {})[s.key] || {}
+    const head = buildFlower(s.f.def.model, { hex: s.f.color.hex, seed: seed + s.k * 101 + s.f.index, spread: tweak.spread })
     head.scale.setScalar(s.scale)
     fg.add(head)
 

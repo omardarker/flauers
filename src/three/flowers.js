@@ -680,15 +680,17 @@ function floretsMaterial() {
 
 // ---------------------------------------------------------------- Paniculata
 // Paniculata: nube de florecillas diminutas sobre ramificación muy fina.
-export function gypsophila({ hex, seed = 13 }) {
+export function gypsophila({ hex, seed = 13, spread = 0.5 }) {
   const rand = rng(seed)
   const geoms = []
   const pts = []
   const branches = 11
+  // apertura: 0 = ramillete cerrado y compacto, 1 = muy abierto
+  const open = 0.45 + spread * 1.1
   for (let b = 0; b < branches; b++) {
     const th = (b / branches) * Math.PI * 2 + rand() * 0.5
-    const lean = 0.3 + rand() * 0.5
-    const len = 0.5 + rand() * 0.4
+    const lean = (0.3 + rand() * 0.5) * open
+    const len = (0.5 + rand() * 0.4) * (0.8 + spread * 0.4)
     const end = new THREE.Vector3(Math.cos(th) * lean * len, len * 0.85, Math.sin(th) * lean * len)
     const start = new THREE.Vector3(0, -0.3, 0)
     const dir = end.clone().sub(start)
@@ -700,7 +702,7 @@ export function gypsophila({ hex, seed = 13 }) {
     // ramillete: sub-ramas cortas, cada una con varias florecillas
     const sub = 4 + Math.floor(rand() * 3)
     for (let j = 0; j < sub; j++) {
-      const off = new THREE.Vector3(rand() - 0.5, rand() - 0.3, rand() - 0.5).multiplyScalar(0.34)
+      const off = new THREE.Vector3(rand() - 0.5, rand() - 0.3, rand() - 0.5).multiplyScalar(0.2 + open * 0.14)
       const mid = end.clone().add(off)
       const twig = new THREE.CylinderGeometry(0.0025, 0.003, off.length(), 3, 1)
       twig.translate(0, off.length() / 2, 0)
@@ -715,7 +717,7 @@ export function gypsophila({ hex, seed = 13 }) {
     }
   }
   const flowers = dots(pts, 0.02, hex, { widthSeg: 6, heightSeg: 5, scaleFn: (i) => 0.7 + ((i * 37) % 10) / 20 })
-  return group([meshOf(geoms), flowers], 0.55, { filler: true })
+  return group([meshOf(geoms), flowers], 0.35 + spread * 0.4, { filler: true })
 }
 
 // ---------------------------------------------------------------- Eucalipto

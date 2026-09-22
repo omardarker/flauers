@@ -28,7 +28,27 @@ export function compactBouquet(bouquet) {
     l: encodeLayout(bouquet.layout),
     o: Number.isFinite(bouquet.wrapOpen) ? Math.round(bouquet.wrapOpen) : undefined,
     h: Number.isFinite(bouquet.wrapHeight) ? Math.round(bouquet.wrapHeight) : undefined,
+    k: encodeTweaks(bouquet.tweaks),
   }
+}
+
+function encodeTweaks(tweaks) {
+  if (!tweaks) return undefined
+  const rows = Object.entries(tweaks)
+    .filter(([, t]) => t && Number.isFinite(t.spread))
+    .map(([k, t]) => [k, Math.round(t.spread * 100) / 100])
+  return rows.length ? rows : undefined
+}
+
+function decodeTweaks(rows) {
+  const out = {}
+  if (!Array.isArray(rows)) return out
+  rows.forEach((row) => {
+    if (!Array.isArray(row) || row.length !== 2) return
+    const [k, spread] = row
+    if (typeof k === 'string' && typeof spread === 'number' && Number.isFinite(spread)) out[k] = { spread: Math.max(0, Math.min(1, spread)) }
+  })
+  return out
 }
 
 export function encodeBouquet(bouquet) {
@@ -47,6 +67,7 @@ export function expandCompact(c) {
     layout: decodeLayout(c.l),
     wrapOpen: typeof c.o === 'number' && Number.isFinite(c.o) ? Math.max(0, Math.min(100, Math.round(c.o))) : undefined,
     wrapHeight: typeof c.h === 'number' && Number.isFinite(c.h) ? Math.max(0, Math.min(100, Math.round(c.h))) : undefined,
+    tweaks: decodeTweaks(c.k),
   }
 }
 

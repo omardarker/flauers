@@ -31,7 +31,7 @@ export function BouquetViewer({ bouquet, className, onReady, targetY, editable =
   bouquetRef.current = bouquet
 
   // flores y disposición: reconstrucción completa (con pequeño debounce)
-  const key = JSON.stringify([bouquet.items, bouquet.layout || null])
+  const key = JSON.stringify([bouquet.items, bouquet.layout || null, bouquet.tweaks || null])
   useEffect(() => {
     const t = setTimeout(() => {
       const stage = stageRef.current

@@ -176,7 +176,7 @@ export class BouquetStage {
   _selectionInfo(fg) {
     if (!fg) return null
     const { key, def, lift, head } = fg.userData
-    return { key, name: def.name, lift, y: head.position.y }
+    return { key, name: def.name, model: def.model, lift, y: head.position.y }
   }
 
   /** Selecciona una flor (o null) y avisa a la interfaz. */

@@ -60,6 +60,12 @@ function sanitize(c) {
     l: layout && layout.length ? layout : undefined,
     o: typeof c.o === 'number' && Number.isFinite(c.o) ? Math.max(0, Math.min(100, Math.round(c.o))) : undefined,
     h: typeof c.h === 'number' && Number.isFinite(c.h) ? Math.max(0, Math.min(100, Math.round(c.h))) : undefined,
+    k: Array.isArray(c.k)
+      ? c.k
+          .filter((r) => Array.isArray(r) && r.length === 2 && typeof r[0] === 'string' && typeof r[1] === 'number' && Number.isFinite(r[1]))
+          .map(([k, v]) => [k.slice(0, 40), Math.max(0, Math.min(1, +v.toFixed(2)))])
+          .slice(0, 100)
+      : undefined,
   }
 }
 
