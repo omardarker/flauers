@@ -6,15 +6,19 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js'
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js'
 import { disposeGroup, placeFlower, relayoutBouquet, headLimit, stemBase, withLift, liftOf, FOCAL } from './bouquet.js'
 
-let _envCache = null
+// El mapa de entorno pertenece a un contexto WebGL: se genera por renderer.
+const _envCache = new WeakMap()
 export function environmentFor(renderer) {
-  if (!_envCache) {
+  if (!_envCache.has(renderer)) {
     const pmrem = new THREE.PMREMGenerator(renderer)
-    _envCache = pmrem.fromScene(new RoomEnvironment(), 0.04).texture
+    _envCache.set(renderer, pmrem.fromScene(new RoomEnvironment(), 0.04).texture)
     pmrem.dispose()
   }
-  return _envCache
+  return _envCache.get(renderer)
 }
+
+// Intensidad única del entorno para taller, regalo y miniaturas.
+export const ENV_INTENSITY = 0.12
 
 export function createRenderer(canvas, { alpha = true, shadows = true } = {}) {
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha, powerPreference: 'high-performance' })
@@ -67,7 +71,7 @@ export class BouquetStage {
     this.renderer = createRenderer(canvas)
     this.scene = new THREE.Scene()
     this.scene.environment = environmentFor(this.renderer)
-    this.scene.environmentIntensity = 0.45
+    this.scene.environmentIntensity = ENV_INTENSITY
     addLights(this.scene)
 
     this.camera = new THREE.PerspectiveCamera(32, 1, 0.1, 100)

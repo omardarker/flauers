@@ -4,7 +4,7 @@
 import * as THREE from 'three'
 import { buildFlower } from './flowers.js'
 import { buildBouquet, disposeGroup } from './bouquet.js'
-import { addLights, createRenderer, environmentFor } from './scene.js'
+import { addLights, createRenderer, environmentFor, ENV_INTENSITY } from './scene.js'
 
 const cache = new Map()
 const pending = new Map()
@@ -21,7 +21,7 @@ function ensure() {
   renderer.setPixelRatio(1)
   scene = new THREE.Scene()
   scene.environment = environmentFor(renderer)
-  scene.environmentIntensity = 0.45
+  scene.environmentIntensity = ENV_INTENSITY
   addLights(scene, { shadows: true })
   camera = new THREE.PerspectiveCamera(30, 1, 0.1, 50)
 }
