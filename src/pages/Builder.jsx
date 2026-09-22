@@ -24,6 +24,7 @@ export function Builder({ code, gift = false, selection, setSelection }) {
 
   const [bouquet, setBouquet] = useState(initial)
   const [share, setShare] = useState(null)
+  const [selected, setSelected] = useState(null)
   const stageRef = useRef(null)
 
   useEffect(() => setBouquet(initial), [initial])
@@ -82,7 +83,7 @@ export function Builder({ code, gift = false, selection, setSelection }) {
       <Header />
       <div className="builder">
         <div className="builder__stage">
-          <BouquetViewer bouquet={bouquet} editable onMove={moveFlower} onReady={(s) => (stageRef.current = s)} />
+          <BouquetViewer bouquet={bouquet} editable onMove={moveFlower} onSelect={setSelected} onReady={(s) => (stageRef.current = s)} />
           {bouquet.items.length === 0 && (
             <div className="stage-empty">
               <div>
@@ -91,10 +92,52 @@ export function Builder({ code, gift = false, selection, setSelection }) {
               </div>
             </div>
           )}
-          {bouquet.items.length > 0 && (
-            <span className="stage-hint">
-              Arrastra una flor para moverla · Arrastra el fondo para girar · Shift: subir o bajar
-            </span>
+          {bouquet.items.length > 0 && !selected && (
+            <span className="stage-hint">Toca o arrastra una flor para moverla · Arrastra el fondo para girar</span>
+          )}
+          {selected && (
+            <div className="flower-tool">
+              <div className="flower-tool__head">
+                <strong>{selected.name}</strong>
+                <button className="flower-tool__close" onClick={() => stageRef.current?.select(null)} aria-label="Cerrar">
+                  ×
+                </button>
+              </div>
+              <div className="range__label">
+                Altura <span>{selected.lift > 0.02 ? 'más arriba' : selected.lift < -0.02 ? 'más abajo' : 'normal'}</span>
+              </div>
+              <div className="range">
+                <span className="range__end">Abajo</span>
+                <input
+                  type="range"
+                  min={-100}
+                  max={100}
+                  step={1}
+                  value={Math.round((selected.lift / 1.3) * 100)}
+                  aria-label={`Altura de ${selected.name}`}
+                  onChange={(e) => {
+                    const lift = (Number(e.target.value) / 100) * 1.3
+                    setSelected((sel) => ({ ...sel, lift }))
+                    stageRef.current?.setLift(selected.key, lift)
+                  }}
+                />
+                <span className="range__end">Arriba</span>
+              </div>
+              <div className="flower-tool__hint">Arrástrala en el ramo para cambiarla de sitio.</div>
+              {layout[selected.key] && (
+                <button
+                  className="link-btn"
+                  onClick={() => {
+                    const next = { ...layout }
+                    delete next[selected.key]
+                    update({ layout: next })
+                    stageRef.current?.select(null)
+                  }}
+                >
+                  Devolver esta flor al acomodo automático
+                </button>
+              )}
+            </div>
           )}
           {hasLayout && (
             <button className="btn btn--soft btn--sm stage-reset" onClick={() => update({ layout: {} })} title="Vuelve a acomodar todas las flores automáticamente">

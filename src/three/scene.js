@@ -101,6 +101,16 @@ export class BouquetStage {
     this._running = false
     this._drag = null
     this._dragEnabled = false
+    this.selectedKey = null
+    this.onSelect = null
+    this._ring = new THREE.Mesh(
+      new THREE.TorusGeometry(1, 0.018, 8, 48),
+      new THREE.MeshBasicMaterial({ color: 0x6f8a66, transparent: true, opacity: 0.85, depthTest: false }),
+    )
+    this._ring.rotation.x = Math.PI / 2
+    this._ring.visible = false
+    this._ring.renderOrder = 10
+    this.scene.add(this._ring)
     this._raycaster = new THREE.Raycaster()
     this._ndc = new THREE.Vector2()
     this._onPointerDown = (e) => this._pointerDown(e)
@@ -118,6 +128,7 @@ export class BouquetStage {
       disposeGroup(this.group)
     }
     this.group = group
+    this._syncSelection()
     if (group) {
       this.scene.add(group)
       // encuadre según el tamaño del ramo
@@ -138,8 +149,9 @@ export class BouquetStage {
   // ----- Arrastre de flores -----------------------------------------------
 
   /** Permite tomar una flor con el puntero y moverla. onMove(key, [x, y, z]) al soltar. */
-  enableDrag({ onMove } = {}) {
+  enableDrag({ onMove, onSelect } = {}) {
     this.onMove = onMove
+    this.onSelect = onSelect
     if (this._dragEnabled) return
     this._dragEnabled = true
     // capture: se ejecuta antes que OrbitControls, así podemos bloquear la órbita
@@ -147,6 +159,61 @@ export class BouquetStage {
     this.canvas.addEventListener('pointermove', this._onPointerMove)
     this.canvas.addEventListener('pointerup', this._onPointerUp)
     this.canvas.addEventListener('pointercancel', this._onPointerUp)
+  }
+
+  _flowerByKey(key) {
+    return this.group?.userData.flowers.find((fg) => fg.userData.key === key) || null
+  }
+
+  _selectionInfo(fg) {
+    if (!fg) return null
+    const { key, def, lift, head } = fg.userData
+    return { key, name: def.name, lift, y: head.position.y }
+  }
+
+  /** Selecciona una flor (o null) y avisa a la interfaz. */
+  select(key) {
+    this.selectedKey = key
+    this._syncSelection()
+    this.onSelect?.(this._selectionInfo(this._flowerByKey(key)))
+  }
+
+  _syncSelection() {
+    const fg = this.selectedKey ? this._flowerByKey(this.selectedKey) : null
+    if (!fg) {
+      this._ring.visible = false
+      if (this.selectedKey && this.group) {
+        this.selectedKey = null
+        this.onSelect?.(null)
+      }
+      return
+    }
+    const r = Math.max(0.28, fg.userData.radius * 0.95)
+    this._ring.scale.setScalar(r)
+    this._ring.visible = true
+    this._followRing(fg)
+  }
+
+  _followRing(fg) {
+    const { head, radius } = fg.userData
+    this._ring.position.copy(head.position)
+    this._ring.quaternion.copy(head.quaternion)
+    this._ring.rotateX(Math.PI / 2)
+    this._ring.translateZ(-radius * 0.35)
+  }
+
+  /** Sube o baja la flor seleccionada respecto a la cúpula del ramo. */
+  setLift(key, lift) {
+    const fg = this._flowerByKey(key)
+    if (!fg) return
+    const { head, def } = fg.userData
+    const R = this.group.userData.R || 1
+    const pos = head.position.clone()
+    pos.y = domeY(Math.hypot(pos.x, pos.z), R, def) + lift
+    fg.userData.lift = lift
+    placeFlower(fg, pos)
+    this._followRing(fg)
+    this.onMove?.(key, [pos.x, pos.y, pos.z])
   }
 
   _hitboxes() {
@@ -165,7 +232,10 @@ export class BouquetStage {
     if (!this._dragEnabled || !this.group) return
     if (e.pointerType === 'mouse' && e.button !== 0) return
     const fg = this._pick(e)
-    if (!fg) return
+    if (!fg) {
+      if (this.selectedKey) this.select(null)
+      return
+    }
     e.preventDefault()
     e.stopImmediatePropagation()
     this.controls.enabled = false
@@ -233,6 +303,7 @@ export class BouquetStage {
     }
     d.moved = true
     placeFlower(fg, pos)
+    if (this.selectedKey === fg.userData.key) this._followRing(fg)
   }
 
   _pointerUp(e) {
@@ -258,6 +329,7 @@ export class BouquetStage {
       const p = fg.userData.head.position
       this.onMove(fg.userData.key, [p.x, p.y, p.z])
     }
+    if (commit) this.select(fg.userData.key)
   }
 
   resize() {

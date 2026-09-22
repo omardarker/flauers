@@ -6,16 +6,18 @@ import { buildBouquet } from '../three/bouquet.js'
  * Lienzo 3D interactivo. Reconstruye el ramo cuando cambian sus items,
  * el papel o el lazo (con un pequeño debounce para los steppers).
  */
-export function BouquetViewer({ bouquet, className, onReady, targetY, editable = false, onMove }) {
+export function BouquetViewer({ bouquet, className, onReady, targetY, editable = false, onMove, onSelect }) {
   const canvasRef = useRef(null)
   const stageRef = useRef(null)
   const onMoveRef = useRef(onMove)
   onMoveRef.current = onMove
+  const onSelectRef = useRef(onSelect)
+  onSelectRef.current = onSelect
 
   useEffect(() => {
     const stage = new BouquetStage(canvasRef.current, { targetY })
     stageRef.current = stage
-    if (editable) stage.enableDrag({ onMove: (key, pos) => onMoveRef.current?.(key, pos) })
+    if (editable) stage.enableDrag({ onMove: (key, pos) => onMoveRef.current?.(key, pos), onSelect: (info) => onSelectRef.current?.(info) })
     stage.start()
     onReady?.(stage)
     return () => {

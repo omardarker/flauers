@@ -336,3 +336,10 @@ img { display: block; max-width: 100%; }
 .range__label { display: flex; justify-content: space-between; font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--moss); font-weight: 700; margin: 8px 0 2px; }
 .range__label span { color: var(--ink-soft); font-weight: 400; letter-spacing: 0; text-transform: none; }
 .link-btn--inline { margin-top: 0; font-size: 12px; }
+
+.flower-tool { position: absolute; left: 16px; top: 16px; z-index: 3; width: min(300px, calc(100% - 32px)); background: rgba(255,253,248,0.94); backdrop-filter: blur(8px); border-radius: 16px; padding: 14px 16px 12px; box-shadow: var(--shadow); border: 1px solid rgba(63,85,64,0.1); animation: rise 0.2s ease; }
+.flower-tool__head { display: flex; align-items: center; justify-content: space-between; font-family: var(--font-display); font-size: 22px; color: var(--forest); }
+.flower-tool__close { border: 0; background: var(--sand); width: 28px; height: 28px; border-radius: 50%; font-size: 18px; color: var(--forest); display: grid; place-items: center; }
+.flower-tool__hint { font-size: 12px; color: var(--ink-soft); margin-top: 6px; }
+.flower-tool .link-btn { margin-top: 6px; padding: 0; }
+@media (max-width: 900px) { .flower-tool { top: auto; bottom: 16px; } }
