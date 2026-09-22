@@ -62,7 +62,7 @@ export default async function handler(req, res) {
       ? `“${message.slice(0, 120)}”${from ? ` — ${from}` : ''}`
       : `${from ? `${from} te envió` : 'Te enviaron'} un ramo en 3D. Ábrelo y gíralo para verlo desde todos los ángulos.`
     : 'Elige tus flores, arma un ramo en 3D y regálalo con un link.'
-  const image = `${origin}/${found ? 'og-gift.jpg' : 'og-home.jpg'}`
+  const image = `${origin}/og-logo.jpg`
   const url = `${origin}/r/${id}`
 
   const meta = `
@@ -73,10 +73,10 @@ export default async function handler(req, res) {
     <meta property="og:title" content="${esc(title)}" />
     <meta property="og:description" content="${esc(description)}" />
     <meta property="og:image" content="${esc(image)}" />
-    <meta property="og:image:width" content="1200" />
-    <meta property="og:image:height" content="630" />
+    <meta property="og:image:width" content="800" />
+    <meta property="og:image:height" content="800" />
     <meta property="og:url" content="${esc(url)}" />
-    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:card" content="summary" />
     <meta name="twitter:title" content="${esc(title)}" />
     <meta name="twitter:description" content="${esc(description)}" />
     <meta name="twitter:image" content="${esc(image)}" />`
