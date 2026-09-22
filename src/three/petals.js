@@ -100,7 +100,7 @@ export function makePetal(opts = {}) {
     colorTip = colorBase,
     colorEdge = null,
     edgeAmount = 0.35,
-    occlusion = 0.4, // oscurecimiento en la base (zona interior de la flor)
+    occlusion = 0.2, // oscurecimiento suave en la base (zona interior de la flor)
     seed = 0,
   } = opts
 
@@ -248,7 +248,7 @@ export function darken(geom, factor) {
  * interpola desde el centro hacia fuera.
  */
 export function spiral(makeGeom, opts = {}) {
-  const { n = 30, seed = 1, jitter = 0.1, ease = 1, depthShade = 0.3 } = opts
+  const { n = 30, seed = 1, jitter = 0.1, ease = 1, depthShade = 0.14 } = opts
   const rand = rng(seed)
   const val = (v, t) => (Array.isArray(v) ? lerp(v[0], v[1], t) : v)
   const golden = Math.PI * (3 - Math.sqrt(5))
@@ -290,11 +290,11 @@ export function transformed(geom, { pos = [0, 0, 0], rot = [0, 0, 0], scale = 1 
 const _materials = {}
 const MATERIALS = {
   // pétalos aterciopelados (rosa, peonía, clavel...)
-  velvet: { roughness: 0.85, sheen: 0.35, sheenRoughness: 0.8, sheenColor: 0xfff4ec, envMapIntensity: 0.5 },
+  velvet: { roughness: 0.92, sheen: 0.18, sheenRoughness: 0.85, sheenColor: 0xfff4ec, envMapIntensity: 0.35 },
   // pétalos cerosos y lisos (tulipán, lirio, orquídea)
-  waxy: { roughness: 0.45, clearcoat: 0.3, clearcoatRoughness: 0.45, sheen: 0.1, sheenRoughness: 0.6, envMapIntensity: 0.6 },
+  waxy: { roughness: 0.62, clearcoat: 0.1, clearcoatRoughness: 0.55, sheen: 0.06, sheenRoughness: 0.7, envMapIntensity: 0.4 },
   // hojas y tallos
-  leaf: { roughness: 0.65, clearcoat: 0.12, clearcoatRoughness: 0.5, sheen: 0.05, envMapIntensity: 0.55 },
+  leaf: { roughness: 0.78, clearcoat: 0.04, clearcoatRoughness: 0.6, sheen: 0.04, envMapIntensity: 0.4 },
 }
 
 export function petalMaterial(kind = 'velvet') {
@@ -333,7 +333,7 @@ export function makeCupPetal(opts = {}) {
     edgeAmount = 0.3,
     colorBlotch = null, // mancha de la base (interior del tulipán)
     blotchEnd = 0.2,
-    occlusion = 0.35,
+    occlusion = 0.18,
   } = opts
   const cb = toColor(colorBase)
   const ct = toColor(colorTip)

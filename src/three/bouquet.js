@@ -404,10 +404,17 @@ function makeWrap(topRadius, hex, seed, topY = -0.7) {
     geom.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2))
     geom.setIndex(idx)
     geom.computeVertexNormals()
-    const mat = new THREE.MeshStandardMaterial({ color: colorHex, side: THREE.DoubleSide, roughness: 0.9, metalness: 0 })
+    const mat = new THREE.MeshStandardMaterial({
+      color: colorHex,
+      side: THREE.DoubleSide,
+      roughness: 1,
+      metalness: 0,
+      emissive: colorHex,
+      emissiveIntensity: 0.16, // levanta el interior del cono, que no recibe luz directa
+    })
     const mesh = new THREE.Mesh(geom, mat)
     mesh.castShadow = true
-    mesh.receiveShadow = true
+    mesh.receiveShadow = false
     return mesh
   }
   const g = new THREE.Group()

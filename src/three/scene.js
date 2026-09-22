@@ -28,9 +28,9 @@ export function createRenderer(canvas, { alpha = true, shadows = true } = {}) {
 }
 
 export function addLights(scene, { shadows = true } = {}) {
-  const hemi = new THREE.HemisphereLight(0xfff4e4, 0x9aa38c, 0.5)
+  const hemi = new THREE.HemisphereLight(0xfff6e8, 0xc4cbb5, 1.0)
   scene.add(hemi)
-  const key = new THREE.DirectionalLight(0xfff3e2, 2.4)
+  const key = new THREE.DirectionalLight(0xfff3e2, 1.45)
   key.position.set(3.5, 6, 4)
   key.castShadow = shadows
   if (shadows) {
@@ -42,18 +42,22 @@ export function addLights(scene, { shadows = true } = {}) {
     key.shadow.camera.top = 4
     key.shadow.camera.bottom = -4
     key.shadow.bias = -0.00015
-    key.shadow.normalBias = 0.02
-    key.shadow.radius = 3
-    key.shadow.intensity = 0.8
+    key.shadow.normalBias = 0.03
+    key.shadow.radius = 7
+    key.shadow.intensity = 0.38
   }
   scene.add(key)
-  const fill = new THREE.DirectionalLight(0xdfe8f5, 0.35)
+  const fill = new THREE.DirectionalLight(0xe6edf7, 0.55)
   fill.position.set(-4, 2, -3)
   scene.add(fill)
-  const rim = new THREE.DirectionalLight(0xffe3c4, 0.5)
+  // luz desde abajo y de frente: aclara el interior del papel y la base del ramo
+  const under = new THREE.DirectionalLight(0xfff0dc, 0.45)
+  under.position.set(0.5, -3, 4)
+  scene.add(under)
+  const rim = new THREE.DirectionalLight(0xffe3c4, 0.4)
   rim.position.set(0, 3, -6)
   scene.add(rim)
-  return { hemi, key, fill, rim }
+  return { hemi, key, fill, rim, under }
 }
 
 export class BouquetStage {
@@ -63,7 +67,7 @@ export class BouquetStage {
     this.renderer = createRenderer(canvas)
     this.scene = new THREE.Scene()
     this.scene.environment = environmentFor(this.renderer)
-    this.scene.environmentIntensity = 0.3
+    this.scene.environmentIntensity = 0.45
     addLights(this.scene)
 
     this.camera = new THREE.PerspectiveCamera(32, 1, 0.1, 100)
@@ -90,7 +94,7 @@ export class BouquetStage {
     })
 
     // sombra de contacto
-    const ground = new THREE.Mesh(new THREE.PlaneGeometry(20, 20), new THREE.ShadowMaterial({ opacity: 0.22, color: 0x3d3a2a }))
+    const ground = new THREE.Mesh(new THREE.PlaneGeometry(20, 20), new THREE.ShadowMaterial({ opacity: 0.14, color: 0x3d3a2a }))
     ground.rotation.x = -Math.PI / 2
     ground.position.y = -3.05
     ground.receiveShadow = true

@@ -21,7 +21,7 @@ function ensure() {
   renderer.setPixelRatio(1)
   scene = new THREE.Scene()
   scene.environment = environmentFor(renderer)
-  scene.environmentIntensity = 0.3
+  scene.environmentIntensity = 0.45
   addLights(scene, { shadows: true })
   camera = new THREE.PerspectiveCamera(30, 1, 0.1, 50)
 }
