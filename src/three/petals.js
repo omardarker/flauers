@@ -100,7 +100,7 @@ export function makePetal(opts = {}) {
     colorTip = colorBase,
     colorEdge = null,
     edgeAmount = 0.35,
-    occlusion = 0.2, // oscurecimiento suave en la base (zona interior de la flor)
+    occlusion = 0.26, // oscurecimiento suave en la base (zona interior de la flor)
     seed = 0,
   } = opts
 
@@ -248,7 +248,7 @@ export function darken(geom, factor) {
  * interpola desde el centro hacia fuera.
  */
 export function spiral(makeGeom, opts = {}) {
-  const { n = 30, seed = 1, jitter = 0.1, ease = 1, depthShade = 0.14 } = opts
+  const { n = 30, seed = 1, jitter = 0.1, ease = 1, depthShade = 0.18 } = opts
   const rand = rng(seed)
   const val = (v, t) => (Array.isArray(v) ? lerp(v[0], v[1], t) : v)
   const golden = Math.PI * (3 - Math.sqrt(5))
@@ -333,7 +333,7 @@ export function makeCupPetal(opts = {}) {
     edgeAmount = 0.3,
     colorBlotch = null, // mancha de la base (interior del tulipán)
     blotchEnd = 0.2,
-    occlusion = 0.18,
+    occlusion = 0.22,
   } = opts
   const cb = toColor(colorBase)
   const ct = toColor(colorTip)

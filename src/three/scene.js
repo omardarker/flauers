@@ -28,9 +28,9 @@ export function createRenderer(canvas, { alpha = true, shadows = true } = {}) {
 }
 
 export function addLights(scene, { shadows = true } = {}) {
-  const hemi = new THREE.HemisphereLight(0xfff6e8, 0xc4cbb5, 1.0)
+  const hemi = new THREE.HemisphereLight(0xfff6e8, 0xbfc7b0, 0.9)
   scene.add(hemi)
-  const key = new THREE.DirectionalLight(0xfff3e2, 1.45)
+  const key = new THREE.DirectionalLight(0xfff3e2, 1.55)
   key.position.set(3.5, 6, 4)
   key.castShadow = shadows
   if (shadows) {
@@ -43,8 +43,8 @@ export function addLights(scene, { shadows = true } = {}) {
     key.shadow.camera.bottom = -4
     key.shadow.bias = -0.00015
     key.shadow.normalBias = 0.03
-    key.shadow.radius = 7
-    key.shadow.intensity = 0.38
+    key.shadow.radius = 5
+    key.shadow.intensity = 0.5
   }
   scene.add(key)
   const fill = new THREE.DirectionalLight(0xe6edf7, 0.55)

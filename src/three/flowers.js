@@ -307,8 +307,9 @@ export function sunflower({ hex, seed = 4 }) {
       seed: seed + i,
     })
   const geoms = [
-    ...whorl(petal(0.35), { n: 26, r0: 0.44, y0: 0.05, tilt: 1.2, seed, jitter: 0.1 }),
-    ...whorl(petal(0.6), { n: 26, r0: 0.45, y0: 0.0, tilt: 1.4, phase: Math.PI / 26, seed: seed + 1, jitter: 0.1, scale: 0.95 }),
+    ...whorl(petal(0.3), { n: 34, r0: 0.43, y0: 0.06, tilt: 1.15, seed, jitter: 0.08 }),
+    ...whorl(petal(0.5), { n: 34, r0: 0.44, y0: 0.01, tilt: 1.35, phase: Math.PI / 34, seed: seed + 1, jitter: 0.08, scale: 0.96 }),
+    ...whorl(petal(0.65), { n: 30, r0: 0.44, y0: -0.03, tilt: 1.5, phase: Math.PI / 30 + 0.05, seed: seed + 2, jitter: 0.1, scale: 0.9 }),
   ]
   // disco: cúpula gruesa + reverso cónico
   const disc = new THREE.SphereGeometry(0.46, 40, 14, 0, Math.PI * 2, 0, Math.PI / 2)
@@ -319,18 +320,12 @@ export function sunflower({ hex, seed = 4 }) {
   back.rotateX(Math.PI)
   back.translate(0, -0.09, 0)
   geoms.push(paint(back, GREEN))
-  geoms.push(...sepals({ n: 16, len: 0.34, width: 0.11, tilt: 1.55, y0: 0.0, r0: 0.4, seed }))
-  geoms.push(...sepals({ n: 12, len: 0.28, width: 0.1, tilt: 1.65, y0: -0.05, r0: 0.36, seed: seed + 2 }))
-  const seeds = fibonacciDisc(300, 0.43, 0.06, 0.12)
+  // brácteas verdes por debajo de los pétalos
+  geoms.push(...sepals({ n: 16, len: 0.34, width: 0.11, tilt: 1.6, y0: -0.08, r0: 0.4, seed }))
+  geoms.push(...sepals({ n: 12, len: 0.28, width: 0.1, tilt: 1.7, y0: -0.12, r0: 0.36, seed: seed + 2 }))
+  const seeds = fibonacciDisc(300, 0.44, 0.06, 0.12)
   const seedDots = dots(seeds, 0.026, '#5a3a1e', { scaleFn: (i) => 0.6 + 0.4 * ((i * 7919) % 100) / 100 })
-  // anillo de flósculos abiertos (amarillo oscuro) en el borde del disco
-  const ring = []
-  for (let i = 0; i < 60; i++) {
-    const th = (i / 60) * Math.PI * 2
-    ring.push(new THREE.Vector3(Math.cos(th) * 0.42, 0.1, Math.sin(th) * 0.42))
-  }
-  const ringDots = dots(ring, 0.022, '#b8862a')
-  return group([meshOf(geoms), seedDots, ringDots], 0.95)
+  return group([meshOf(geoms), seedDots], 0.95)
 }
 
 // ---------------------------------------------------------------- Margarita / Gerbera

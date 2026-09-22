@@ -410,11 +410,11 @@ function makeWrap(topRadius, hex, seed, topY = -0.7) {
       roughness: 1,
       metalness: 0,
       emissive: colorHex,
-      emissiveIntensity: 0.16, // levanta el interior del cono, que no recibe luz directa
+      emissiveIntensity: 0.07, // levanta un poco el interior del cono
     })
     const mesh = new THREE.Mesh(geom, mat)
     mesh.castShadow = true
-    mesh.receiveShadow = false
+    mesh.receiveShadow = true
     return mesh
   }
   const g = new THREE.Group()
